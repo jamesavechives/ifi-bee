@@ -14,7 +14,6 @@ import (
 	"github.com/ethersphere/bee/pkg/logging"
 	"github.com/ethersphere/bee/pkg/p2p"
 	"github.com/ethersphere/bee/pkg/p2p/streamtest"
-	postagetesting "github.com/ethersphere/bee/pkg/postage/testing"
 	"github.com/ethersphere/bee/pkg/pullsync"
 	"github.com/ethersphere/bee/pkg/pullsync/pullstorage/mock"
 	testingc "github.com/ethersphere/bee/pkg/storage/testing"
@@ -142,8 +141,7 @@ func TestIncoming_WantAll(t *testing.T) {
 func TestIncoming_UnsolicitedChunk(t *testing.T) {
 	evilAddr := swarm.MustParseHexAddress("0000000000000000000000000000000000000000000000000000000000000666")
 	evilData := []byte{0x66, 0x66, 0x66}
-	stamp := postagetesting.MustNewStamp()
-	evil := swarm.NewChunk(evilAddr, evilData).WithStamp(stamp)
+	evil := swarm.NewChunk(evilAddr, evilData)
 
 	var (
 		mockTopmost = uint64(5)
@@ -216,6 +214,5 @@ func newPullSync(s p2p.Streamer, o ...mock.Option) (*pullsync.Syncer, *mock.Pull
 	storage := mock.NewPullStorage(o...)
 	logger := logging.New(ioutil.Discard, 0)
 	unwrap := func(swarm.Chunk) {}
-	validStamp := func(ch swarm.Chunk, _ []byte) (swarm.Chunk, error) { return ch, nil }
-	return pullsync.New(s, storage, unwrap, validStamp, logger), storage
+	return pullsync.New(s, storage, unwrap, logger), storage
 }

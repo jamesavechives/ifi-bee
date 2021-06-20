@@ -10,103 +10,52 @@ import (
 	"io/ioutil"
 	"math/big"
 	"testing"
-	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethersphere/bee/pkg/crypto"
 	"github.com/ethersphere/bee/pkg/logging"
+	mockp2p "github.com/ethersphere/bee/pkg/p2p/mock"
 	"github.com/ethersphere/bee/pkg/settlement/swap"
 	"github.com/ethersphere/bee/pkg/settlement/swap/chequebook"
 	mockchequebook "github.com/ethersphere/bee/pkg/settlement/swap/chequebook/mock"
 	mockchequestore "github.com/ethersphere/bee/pkg/settlement/swap/chequestore/mock"
-	"github.com/ethersphere/bee/pkg/settlement/swap/swapprotocol"
 	mockstore "github.com/ethersphere/bee/pkg/statestore/mock"
 	"github.com/ethersphere/bee/pkg/swarm"
 )
 
 type swapProtocolMock struct {
-	emitCheque func(context.Context, swarm.Address, common.Address, *big.Int, swapprotocol.IssueFunc) (*big.Int, error)
+	emitCheque func(ctx context.Context, peer swarm.Address, cheque *chequebook.SignedCheque) error
 }
 
-func (m *swapProtocolMock) EmitCheque(ctx context.Context, peer swarm.Address, beneficiary common.Address, value *big.Int, issueFunc swapprotocol.IssueFunc) (*big.Int, error) {
+func (m *swapProtocolMock) EmitCheque(ctx context.Context, peer swarm.Address, cheque *chequebook.SignedCheque) error {
 	if m.emitCheque != nil {
-		return m.emitCheque(ctx, peer, beneficiary, value, issueFunc)
+		return m.emitCheque(ctx, peer, cheque)
 	}
-	return nil, errors.New("not implemented")
+	return nil
 }
 
 type testObserver struct {
-	receivedCalled chan notifyPaymentReceivedCall
-	sentCalled     chan notifyPaymentSentCall
-}
-
-type notifyPaymentReceivedCall struct {
+	called bool
 	peer   swarm.Address
 	amount *big.Int
 }
 
-type notifyPaymentSentCall struct {
-	peer   swarm.Address
-	amount *big.Int
-	err    error
-}
-
-func newTestObserver() *testObserver {
-	return &testObserver{
-		receivedCalled: make(chan notifyPaymentReceivedCall, 1),
-		sentCalled:     make(chan notifyPaymentSentCall, 1),
-	}
-}
-
-func (t *testObserver) PeerDebt(peer swarm.Address) (*big.Int, error) {
-	return nil, nil
-}
-
-func (t *testObserver) NotifyPaymentReceived(peer swarm.Address, amount *big.Int) error {
-	t.receivedCalled <- notifyPaymentReceivedCall{
-		peer:   peer,
-		amount: amount,
-	}
+func (t *testObserver) NotifyPayment(peer swarm.Address, amount *big.Int) error {
+	t.called = true
+	t.peer = peer
+	t.amount = amount
 	return nil
-}
-
-func (t *testObserver) NotifyRefreshmentReceived(peer swarm.Address, amount *big.Int) error {
-	return nil
-}
-
-func (t *testObserver) NotifyPaymentSent(peer swarm.Address, amount *big.Int, err error) {
-	t.sentCalled <- notifyPaymentSentCall{
-		peer:   peer,
-		amount: amount,
-		err:    err,
-	}
-}
-
-func (t *testObserver) Connect(peer swarm.Address) {
-
-}
-
-func (t *testObserver) Disconnect(peer swarm.Address) {
-
 }
 
 type addressbookMock struct {
-	migratePeer     func(oldPeer, newPeer swarm.Address) error
 	beneficiary     func(peer swarm.Address) (beneficiary common.Address, known bool, err error)
 	chequebook      func(peer swarm.Address) (chequebookAddress common.Address, known bool, err error)
 	beneficiaryPeer func(beneficiary common.Address) (peer swarm.Address, known bool, err error)
 	chequebookPeer  func(chequebook common.Address) (peer swarm.Address, known bool, err error)
 	putBeneficiary  func(peer swarm.Address, beneficiary common.Address) error
 	putChequebook   func(peer swarm.Address, chequebook common.Address) error
-	addDeductionFor func(peer swarm.Address) error
-	addDeductionBy  func(peer swarm.Address) error
-	getDeductionFor func(peer swarm.Address) (bool, error)
-	getDeductionBy  func(peer swarm.Address) (bool, error)
 }
 
-func (m *addressbookMock) MigratePeer(oldPeer, newPeer swarm.Address) error {
-	return m.migratePeer(oldPeer, newPeer)
-}
 func (m *addressbookMock) Beneficiary(peer swarm.Address) (beneficiary common.Address, known bool, err error) {
 	return m.beneficiary(peer)
 }
@@ -124,18 +73,6 @@ func (m *addressbookMock) PutBeneficiary(peer swarm.Address, beneficiary common.
 }
 func (m *addressbookMock) PutChequebook(peer swarm.Address, chequebook common.Address) error {
 	return m.putChequebook(peer, chequebook)
-}
-func (m *addressbookMock) AddDeductionFor(peer swarm.Address) error {
-	return m.addDeductionFor(peer)
-}
-func (m *addressbookMock) AddDeductionBy(peer swarm.Address) error {
-	return m.addDeductionBy(peer)
-}
-func (m *addressbookMock) GetDeductionFor(peer swarm.Address) (bool, error) {
-	return m.getDeductionFor(peer)
-}
-func (m *addressbookMock) GetDeductionBy(peer swarm.Address) (bool, error) {
-	return m.getDeductionBy(peer)
 }
 
 type cashoutMock struct {
@@ -155,8 +92,6 @@ func TestReceiveCheque(t *testing.T) {
 	store := mockstore.NewStateStore()
 	chequebookService := mockchequebook.NewChequebook()
 	amount := big.NewInt(50)
-	exchangeRate := big.NewInt(10)
-	deduction := big.NewInt(10)
 	chequebookAddress := common.HexToAddress("0xcd")
 
 	peer := swarm.MustParseHexAddress("abcd")
@@ -170,22 +105,13 @@ func TestReceiveCheque(t *testing.T) {
 	}
 
 	chequeStore := mockchequestore.NewChequeStore(
-		mockchequestore.WithReceiveChequeFunc(func(ctx context.Context, c *chequebook.SignedCheque, e *big.Int, d *big.Int) (*big.Int, error) {
+		mockchequestore.WithRetrieveChequeFunc(func(ctx context.Context, c *chequebook.SignedCheque) (*big.Int, error) {
 			if !cheque.Equal(c) {
 				t.Fatalf("passed wrong cheque to store. wanted %v, got %v", cheque, c)
-			}
-			if exchangeRate.Cmp(e) != 0 {
-				t.Fatalf("passed wrong exchange rate to store. wanted %v, got %v", exchangeRate, e)
-			}
-			if deduction.Cmp(e) != 0 {
-				t.Fatalf("passed wrong deduction to store. wanted %v, got %v", deduction, d)
 			}
 			return amount, nil
 		}),
 	)
-
-	peerDeductionFor := false
-
 	networkID := uint64(1)
 	addressbook := &addressbookMock{
 		chequebook: func(p swarm.Address) (common.Address, bool, error) {
@@ -203,16 +129,7 @@ func TestReceiveCheque(t *testing.T) {
 			}
 			return nil
 		},
-		addDeductionFor: func(p swarm.Address) error {
-			peerDeductionFor = true
-			if !peer.Equal(p) {
-				t.Fatal("storing deduction for wrong peer")
-			}
-			return nil
-		},
 	}
-
-	observer := newTestObserver()
 
 	swap := swap.New(
 		&swapProtocolMock{},
@@ -223,34 +140,28 @@ func TestReceiveCheque(t *testing.T) {
 		addressbook,
 		networkID,
 		&cashoutMock{},
-		observer,
+		mockp2p.New(),
 	)
 
-	err := swap.ReceiveCheque(context.Background(), peer, cheque, exchangeRate, deduction)
+	observer := &testObserver{}
+	swap.SetNotifyPaymentFunc(observer.NotifyPayment)
+
+	err := swap.ReceiveCheque(context.Background(), peer, cheque)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	expectedAmount := big.NewInt(4)
-
-	select {
-	case call := <-observer.receivedCalled:
-		if call.amount.Cmp(expectedAmount) != 0 {
-			t.Fatalf("observer called with wrong amount. got %d, want %d", call.amount, expectedAmount)
-		}
-
-		if !call.peer.Equal(peer) {
-			t.Fatalf("observer called with wrong peer. got %v, want %v", call.peer, peer)
-		}
-
-	case <-time.After(time.Second):
+	if !observer.called {
 		t.Fatal("expected observer to be called")
 	}
 
-	if !peerDeductionFor {
-		t.Fatal("add deduction for peer not called")
+	if observer.amount.Cmp(amount) != 0 {
+		t.Fatalf("observer called with wrong amount. got %d, want %d", observer.amount, amount)
 	}
 
+	if !observer.peer.Equal(peer) {
+		t.Fatalf("observer called with wrong peer. got %v, want %v", observer.peer, peer)
+	}
 }
 
 func TestReceiveChequeReject(t *testing.T) {
@@ -258,8 +169,6 @@ func TestReceiveChequeReject(t *testing.T) {
 	store := mockstore.NewStateStore()
 	chequebookService := mockchequebook.NewChequebook()
 	chequebookAddress := common.HexToAddress("0xcd")
-	exchangeRate := big.NewInt(10)
-	deduction := big.NewInt(10)
 
 	peer := swarm.MustParseHexAddress("abcd")
 	cheque := &chequebook.SignedCheque{
@@ -274,7 +183,7 @@ func TestReceiveChequeReject(t *testing.T) {
 	var errReject = errors.New("reject")
 
 	chequeStore := mockchequestore.NewChequeStore(
-		mockchequestore.WithReceiveChequeFunc(func(ctx context.Context, c *chequebook.SignedCheque, e *big.Int, d *big.Int) (*big.Int, error) {
+		mockchequestore.WithRetrieveChequeFunc(func(ctx context.Context, c *chequebook.SignedCheque) (*big.Int, error) {
 			return nil, errReject
 		}),
 	)
@@ -285,8 +194,6 @@ func TestReceiveChequeReject(t *testing.T) {
 		},
 	}
 
-	observer := newTestObserver()
-
 	swap := swap.New(
 		&swapProtocolMock{},
 		logger,
@@ -296,10 +203,13 @@ func TestReceiveChequeReject(t *testing.T) {
 		addressbook,
 		networkID,
 		&cashoutMock{},
-		observer,
+		mockp2p.New(),
 	)
 
-	err := swap.ReceiveCheque(context.Background(), peer, cheque, exchangeRate, deduction)
+	observer := &testObserver{}
+	swap.SetNotifyPaymentFunc(observer.NotifyPayment)
+
+	err := swap.ReceiveCheque(context.Background(), peer, cheque)
 	if err == nil {
 		t.Fatal("accepted invalid cheque")
 	}
@@ -307,12 +217,9 @@ func TestReceiveChequeReject(t *testing.T) {
 		t.Fatalf("wrong error. wanted %v, got %v", errReject, err)
 	}
 
-	select {
-	case <-observer.receivedCalled:
-		t.Fatalf("observer called by error.")
-	default:
+	if observer.called {
+		t.Fatal("observer was be called for rejected payment")
 	}
-
 }
 
 func TestReceiveChequeWrongChequebook(t *testing.T) {
@@ -320,8 +227,6 @@ func TestReceiveChequeWrongChequebook(t *testing.T) {
 	store := mockstore.NewStateStore()
 	chequebookService := mockchequebook.NewChequebook()
 	chequebookAddress := common.HexToAddress("0xcd")
-	exchangeRate := big.NewInt(10)
-	deduction := big.NewInt(10)
 
 	peer := swarm.MustParseHexAddress("abcd")
 	cheque := &chequebook.SignedCheque{
@@ -341,7 +246,6 @@ func TestReceiveChequeWrongChequebook(t *testing.T) {
 		},
 	}
 
-	observer := newTestObserver()
 	swapService := swap.New(
 		&swapProtocolMock{},
 		logger,
@@ -351,10 +255,13 @@ func TestReceiveChequeWrongChequebook(t *testing.T) {
 		addressbook,
 		networkID,
 		&cashoutMock{},
-		observer,
+		mockp2p.New(),
 	)
 
-	err := swapService.ReceiveCheque(context.Background(), peer, cheque, exchangeRate, deduction)
+	observer := &testObserver{}
+	swapService.SetNotifyPaymentFunc(observer.NotifyPayment)
+
+	err := swapService.ReceiveCheque(context.Background(), peer, cheque)
 	if err == nil {
 		t.Fatal("accepted invalid cheque")
 	}
@@ -362,12 +269,9 @@ func TestReceiveChequeWrongChequebook(t *testing.T) {
 		t.Fatalf("wrong error. wanted %v, got %v", swap.ErrWrongChequebook, err)
 	}
 
-	select {
-	case <-observer.receivedCalled:
-		t.Fatalf("observer called by error.")
-	default:
+	if observer.called {
+		t.Fatal("observer was be called for rejected payment")
 	}
-
 }
 
 func TestPay(t *testing.T) {
@@ -376,7 +280,22 @@ func TestPay(t *testing.T) {
 
 	amount := big.NewInt(50)
 	beneficiary := common.HexToAddress("0xcd")
+	var cheque chequebook.SignedCheque
+
 	peer := swarm.MustParseHexAddress("abcd")
+	var chequebookCalled bool
+	chequebookService := mockchequebook.NewChequebook(
+		mockchequebook.WithChequebookIssueFunc(func(ctx context.Context, b common.Address, a *big.Int, sendChequeFunc chequebook.SendChequeFunc) (*big.Int, error) {
+			if b != beneficiary {
+				t.Fatalf("issuing cheque for wrong beneficiary. wanted %v, got %v", beneficiary, b)
+			}
+			if a.Cmp(amount) != 0 {
+				t.Fatalf("issuing cheque with wrong amount. wanted %d, got %d", amount, a)
+			}
+			chequebookCalled = true
+			return big.NewInt(0), sendChequeFunc(&cheque)
+		}),
+	)
 
 	networkID := uint64(1)
 	addressbook := &addressbookMock{
@@ -388,36 +307,38 @@ func TestPay(t *testing.T) {
 		},
 	}
 
-	observer := newTestObserver()
-
 	var emitCalled bool
 	swap := swap.New(
 		&swapProtocolMock{
-			emitCheque: func(ctx context.Context, p swarm.Address, b common.Address, a *big.Int, issueFunc swapprotocol.IssueFunc) (*big.Int, error) {
+			emitCheque: func(ctx context.Context, p swarm.Address, c *chequebook.SignedCheque) error {
 				if !peer.Equal(p) {
 					t.Fatal("sending to wrong peer")
 				}
-				if b != beneficiary {
-					t.Fatal("issuing for wrong beneficiary")
-				}
-				if amount.Cmp(a) != 0 {
-					t.Fatal("issuing with wrong amount")
+				if !cheque.Equal(c) {
+					t.Fatal("sending wrong cheque")
 				}
 				emitCalled = true
-				return amount, nil
+				return nil
 			},
 		},
 		logger,
 		store,
-		mockchequebook.NewChequebook(),
+		chequebookService,
 		mockchequestore.NewChequeStore(),
 		addressbook,
 		networkID,
 		&cashoutMock{},
-		observer,
+		mockp2p.New(),
 	)
 
-	swap.Pay(context.Background(), peer, amount)
+	err := swap.Pay(context.Background(), peer, amount)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !chequebookCalled {
+		t.Fatal("chequebook was not called")
+	}
 
 	if !emitCalled {
 		t.Fatal("swap protocol was not called")
@@ -433,6 +354,12 @@ func TestPayIssueError(t *testing.T) {
 
 	peer := swarm.MustParseHexAddress("abcd")
 	errReject := errors.New("reject")
+	chequebookService := mockchequebook.NewChequebook(
+		mockchequebook.WithChequebookIssueFunc(func(ctx context.Context, b common.Address, a *big.Int, sendChequeFunc chequebook.SendChequeFunc) (*big.Int, error) {
+			return big.NewInt(0), errReject
+		}),
+	)
+
 	networkID := uint64(1)
 	addressbook := &addressbookMock{
 		beneficiary: func(p swarm.Address) (common.Address, bool, error) {
@@ -444,39 +371,21 @@ func TestPayIssueError(t *testing.T) {
 	}
 
 	swap := swap.New(
-		&swapProtocolMock{
-			emitCheque: func(c context.Context, a1 swarm.Address, a2 common.Address, i *big.Int, issueFunc swapprotocol.IssueFunc) (*big.Int, error) {
-				return nil, errReject
-			},
-		},
+		&swapProtocolMock{},
 		logger,
 		store,
-		mockchequebook.NewChequebook(),
+		chequebookService,
 		mockchequestore.NewChequeStore(),
 		addressbook,
 		networkID,
 		&cashoutMock{},
-		nil,
+		mockp2p.New(),
 	)
 
-	observer := newTestObserver()
-	swap.SetAccounting(observer)
-
-	swap.Pay(context.Background(), peer, amount)
-	select {
-	case call := <-observer.sentCalled:
-
-		if !call.peer.Equal(peer) {
-			t.Fatalf("observer called with wrong peer. got %v, want %v", call.peer, peer)
-		}
-		if !errors.Is(call.err, errReject) {
-			t.Fatalf("wrong error. wanted %v, got %v", errReject, call.err)
-		}
-
-	case <-time.After(time.Second):
-		t.Fatal("expected observer to be called")
+	err := swap.Pay(context.Background(), peer, amount)
+	if !errors.Is(err, errReject) {
+		t.Fatalf("wrong error. wanted %v, got %v", errReject, err)
 	}
-
 }
 
 func TestPayUnknownBeneficiary(t *testing.T) {
@@ -495,8 +404,7 @@ func TestPayUnknownBeneficiary(t *testing.T) {
 		},
 	}
 
-	observer := newTestObserver()
-
+	var disconnectCalled bool
 	swapService := swap.New(
 		&swapProtocolMock{},
 		logger,
@@ -506,22 +414,24 @@ func TestPayUnknownBeneficiary(t *testing.T) {
 		addressbook,
 		networkID,
 		&cashoutMock{},
-		observer,
+		mockp2p.New(
+			mockp2p.WithDisconnectFunc(func(disconnectPeer swarm.Address) error {
+				if !peer.Equal(disconnectPeer) {
+					t.Fatalf("disconnecting wrong peer. wanted %v, got %v", peer, disconnectPeer)
+				}
+				disconnectCalled = true
+				return nil
+			}),
+		),
 	)
 
-	swapService.Pay(context.Background(), peer, amount)
+	err := swapService.Pay(context.Background(), peer, amount)
+	if !errors.Is(err, swap.ErrUnknownBeneficary) {
+		t.Fatalf("wrong error. wanted %v, got %v", swap.ErrUnknownBeneficary, err)
+	}
 
-	select {
-	case call := <-observer.sentCalled:
-		if !call.peer.Equal(peer) {
-			t.Fatalf("observer called with wrong peer. got %v, want %v", call.peer, peer)
-		}
-		if !errors.Is(call.err, swap.ErrUnknownBeneficary) {
-			t.Fatalf("wrong error. wanted %v, got %v", swap.ErrUnknownBeneficary, call.err)
-		}
-
-	case <-time.After(time.Second):
-		t.Fatal("expected observer to be called")
+	if !disconnectCalled {
+		t.Fatal("disconnect was not called")
 	}
 }
 
@@ -531,9 +441,7 @@ func TestHandshake(t *testing.T) {
 
 	beneficiary := common.HexToAddress("0xcd")
 	networkID := uint64(1)
-	txHash := common.HexToHash("0x1")
-
-	peer := crypto.NewOverlayFromEthereumAddress(beneficiary[:], networkID, txHash.Bytes())
+	peer := crypto.NewOverlayFromEthereumAddress(beneficiary[:], networkID)
 
 	var putCalled bool
 	swapService := swap.New(
@@ -546,12 +454,6 @@ func TestHandshake(t *testing.T) {
 			beneficiary: func(p swarm.Address) (common.Address, bool, error) {
 				return beneficiary, true, nil
 			},
-			beneficiaryPeer: func(common.Address) (peer swarm.Address, known bool, err error) {
-				return peer, true, nil
-			},
-			migratePeer: func(oldPeer, newPeer swarm.Address) error {
-				return nil
-			},
 			putBeneficiary: func(p swarm.Address, b common.Address) error {
 				putCalled = true
 				return nil
@@ -559,7 +461,7 @@ func TestHandshake(t *testing.T) {
 		},
 		networkID,
 		&cashoutMock{},
-		nil,
+		mockp2p.New(),
 	)
 
 	err := swapService.Handshake(peer, beneficiary)
@@ -577,9 +479,8 @@ func TestHandshakeNewPeer(t *testing.T) {
 	store := mockstore.NewStateStore()
 
 	beneficiary := common.HexToAddress("0xcd")
-	trx := common.HexToHash("0x1")
 	networkID := uint64(1)
-	peer := crypto.NewOverlayFromEthereumAddress(beneficiary[:], networkID, trx.Bytes())
+	peer := crypto.NewOverlayFromEthereumAddress(beneficiary[:], networkID)
 
 	var putCalled bool
 	swapService := swap.New(
@@ -592,12 +493,6 @@ func TestHandshakeNewPeer(t *testing.T) {
 			beneficiary: func(p swarm.Address) (common.Address, bool, error) {
 				return beneficiary, false, nil
 			},
-			beneficiaryPeer: func(beneficiary common.Address) (swarm.Address, bool, error) {
-				return peer, true, nil
-			},
-			migratePeer: func(oldPeer, newPeer swarm.Address) error {
-				return nil
-			},
 			putBeneficiary: func(p swarm.Address, b common.Address) error {
 				putCalled = true
 				return nil
@@ -605,7 +500,7 @@ func TestHandshakeNewPeer(t *testing.T) {
 		},
 		networkID,
 		&cashoutMock{},
-		nil,
+		mockp2p.New(),
 	)
 
 	err := swapService.Handshake(peer, beneficiary)
@@ -618,14 +513,13 @@ func TestHandshakeNewPeer(t *testing.T) {
 	}
 }
 
-func TestMigratePeer(t *testing.T) {
+func TestHandshakeWrongBeneficiary(t *testing.T) {
 	logger := logging.New(ioutil.Discard, 0)
 	store := mockstore.NewStateStore()
 
 	beneficiary := common.HexToAddress("0xcd")
-	trx := common.HexToHash("0x1")
+	peer := swarm.MustParseHexAddress("abcd")
 	networkID := uint64(1)
-	peer := crypto.NewOverlayFromEthereumAddress(beneficiary[:], networkID, trx.Bytes())
 
 	swapService := swap.New(
 		&swapProtocolMock{},
@@ -633,22 +527,15 @@ func TestMigratePeer(t *testing.T) {
 		store,
 		mockchequebook.NewChequebook(),
 		mockchequestore.NewChequeStore(),
-		&addressbookMock{
-			beneficiaryPeer: func(beneficiary common.Address) (swarm.Address, bool, error) {
-				return swarm.MustParseHexAddress("00112233"), true, nil
-			},
-			migratePeer: func(oldPeer, newPeer swarm.Address) error {
-				return nil
-			},
-		},
+		&addressbookMock{},
 		networkID,
 		&cashoutMock{},
-		nil,
+		mockp2p.New(),
 	)
 
 	err := swapService.Handshake(peer, beneficiary)
-	if err != nil {
-		t.Fatal(err)
+	if !errors.Is(err, swap.ErrWrongBeneficiary) {
+		t.Fatalf("wrong error. wanted %v, got %v", swap.ErrWrongBeneficiary, err)
 	}
 }
 
@@ -692,7 +579,7 @@ func TestCashout(t *testing.T) {
 				return txHash, nil
 			},
 		},
-		nil,
+		mockp2p.New(),
 	)
 
 	returnedHash, err := swapService.CashCheque(context.Background(), peer)
@@ -738,7 +625,7 @@ func TestCashoutStatus(t *testing.T) {
 				return expectedStatus, nil
 			},
 		},
-		nil,
+		mockp2p.New(),
 	)
 
 	returnedStatus, err := swapService.CashoutStatus(context.Background(), peer)

@@ -16,11 +16,11 @@ import (
 )
 
 type addressesResponse struct {
-	Overlay      *swarm.Address        `json:"overlay"`
+	Overlay      swarm.Address         `json:"overlay"`
 	Underlay     []multiaddr.Multiaddr `json:"underlay"`
 	Ethereum     common.Address        `json:"ethereum"`
-	PublicKey    string                `json:"publicKey"`
-	PSSPublicKey string                `json:"pssPublicKey"`
+	PublicKey    string                `json:"public_key"`
+	PSSPublicKey string                `json:"pss_public_key"`
 }
 
 func (s *Service) addressesHandler(w http.ResponseWriter, r *http.Request) {

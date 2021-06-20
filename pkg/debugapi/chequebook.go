@@ -11,7 +11,6 @@ import (
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethersphere/bee/pkg/bigint"
 	"github.com/ethersphere/bee/pkg/jsonhttp"
 	"github.com/ethersphere/bee/pkg/sctx"
 	"github.com/ethersphere/bee/pkg/settlement/swap/chequebook"
@@ -40,18 +39,18 @@ var (
 )
 
 type chequebookBalanceResponse struct {
-	TotalBalance     *bigint.BigInt `json:"totalBalance"`
-	AvailableBalance *bigint.BigInt `json:"availableBalance"`
+	TotalBalance     *big.Int `json:"totalBalance"`
+	AvailableBalance *big.Int `json:"availableBalance"`
 }
 
 type chequebookAddressResponse struct {
-	Address string `json:"chequebookAddress"`
+	Address string `json:"chequebookaddress"`
 }
 
 type chequebookLastChequePeerResponse struct {
-	Beneficiary string         `json:"beneficiary"`
-	Chequebook  string         `json:"chequebook"`
-	Payout      *bigint.BigInt `json:"payout"`
+	Beneficiary string   `json:"beneficiary"`
+	Chequebook  string   `json:"chequebook"`
+	Payout      *big.Int `json:"payout"`
 }
 
 type chequebookLastChequesPeerResponse struct {
@@ -81,7 +80,7 @@ func (s *Service) chequebookBalanceHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	jsonhttp.OK(w, chequebookBalanceResponse{TotalBalance: bigint.Wrap(balance), AvailableBalance: bigint.Wrap(availableBalance)})
+	jsonhttp.OK(w, chequebookBalanceResponse{TotalBalance: balance, AvailableBalance: availableBalance})
 }
 
 func (s *Service) chequebookAddressHandler(w http.ResponseWriter, r *http.Request) {
@@ -111,7 +110,7 @@ func (s *Service) chequebookLastPeerHandler(w http.ResponseWriter, r *http.Reque
 		lastSentResponse = &chequebookLastChequePeerResponse{
 			Beneficiary: lastSent.Cheque.Beneficiary.String(),
 			Chequebook:  lastSent.Cheque.Chequebook.String(),
-			Payout:      bigint.Wrap(lastSent.Cheque.CumulativePayout),
+			Payout:      lastSent.Cheque.CumulativePayout,
 		}
 	}
 
@@ -127,7 +126,7 @@ func (s *Service) chequebookLastPeerHandler(w http.ResponseWriter, r *http.Reque
 		lastReceivedResponse = &chequebookLastChequePeerResponse{
 			Beneficiary: lastReceived.Cheque.Beneficiary.String(),
 			Chequebook:  lastReceived.Cheque.Chequebook.String(),
-			Payout:      bigint.Wrap(lastReceived.Cheque.CumulativePayout),
+			Payout:      lastReceived.Cheque.CumulativePayout,
 		}
 	}
 
@@ -161,7 +160,7 @@ func (s *Service) chequebookAllLastHandler(w http.ResponseWriter, r *http.Reques
 			LastSent: &chequebookLastChequePeerResponse{
 				Beneficiary: j.Cheque.Beneficiary.String(),
 				Chequebook:  j.Cheque.Chequebook.String(),
-				Payout:      bigint.Wrap(j.Cheque.CumulativePayout),
+				Payout:      j.Cheque.CumulativePayout,
 			},
 			LastReceived: nil,
 		}
@@ -172,7 +171,7 @@ func (s *Service) chequebookAllLastHandler(w http.ResponseWriter, r *http.Reques
 			t.LastReceived = &chequebookLastChequePeerResponse{
 				Beneficiary: j.Cheque.Beneficiary.String(),
 				Chequebook:  j.Cheque.Chequebook.String(),
-				Payout:      bigint.Wrap(j.Cheque.CumulativePayout),
+				Payout:      j.Cheque.CumulativePayout,
 			}
 			lcr[i] = t
 		} else {
@@ -182,7 +181,7 @@ func (s *Service) chequebookAllLastHandler(w http.ResponseWriter, r *http.Reques
 				LastReceived: &chequebookLastChequePeerResponse{
 					Beneficiary: j.Cheque.Beneficiary.String(),
 					Chequebook:  j.Cheque.Chequebook.String(),
-					Payout:      bigint.Wrap(j.Cheque.CumulativePayout),
+					Payout:      j.Cheque.CumulativePayout,
 				},
 			}
 		}
@@ -247,16 +246,17 @@ func (s *Service) swapCashoutHandler(w http.ResponseWriter, r *http.Request) {
 
 type swapCashoutStatusResult struct {
 	Recipient  common.Address `json:"recipient"`
-	LastPayout *bigint.BigInt `json:"lastPayout"`
+	LastPayout *big.Int       `json:"lastPayout"`
 	Bounced    bool           `json:"bounced"`
 }
 
 type swapCashoutStatusResponse struct {
-	Peer            swarm.Address                     `json:"peer"`
-	Cheque          *chequebookLastChequePeerResponse `json:"lastCashedCheque"`
-	TransactionHash *common.Hash                      `json:"transactionHash"`
-	Result          *swapCashoutStatusResult          `json:"result"`
-	UncashedAmount  *bigint.BigInt                    `json:"uncashedAmount"`
+	Peer             swarm.Address            `json:"peer"`
+	Chequebook       common.Address           `json:"chequebook"`
+	CumulativePayout *big.Int                 `json:"cumulativePayout"`
+	Beneficiary      common.Address           `json:"beneficiary"`
+	TransactionHash  common.Hash              `json:"transactionHash"`
+	Result           *swapCashoutStatusResult `json:"result"`
 }
 
 func (s *Service) swapCashoutStatusHandler(w http.ResponseWriter, r *http.Request) {
@@ -272,13 +272,13 @@ func (s *Service) swapCashoutStatusHandler(w http.ResponseWriter, r *http.Reques
 	status, err := s.swap.CashoutStatus(r.Context(), peer)
 	if err != nil {
 		if errors.Is(err, chequebook.ErrNoCheque) {
-			s.logger.Debugf("debug api: cashout status peer: %v, err: %v", addr, err)
+			s.logger.Debugf("debug api: cashout status peer: %v", addr, err)
 			s.logger.Errorf("debug api: cashout status peer: %s", addr)
 			jsonhttp.NotFound(w, errNoCheque)
 			return
 		}
 		if errors.Is(err, chequebook.ErrNoCashout) {
-			s.logger.Debugf("debug api: cashout status peer: %v, err: %v", addr, err)
+			s.logger.Debugf("debug api: cashout status peer: %v", addr, err)
 			s.logger.Errorf("debug api: cashout status peer: %s", addr)
 			jsonhttp.NotFound(w, errNoCashout)
 			return
@@ -290,30 +290,21 @@ func (s *Service) swapCashoutStatusHandler(w http.ResponseWriter, r *http.Reques
 	}
 
 	var result *swapCashoutStatusResult
-	var txHash *common.Hash
-	var chequeResponse *chequebookLastChequePeerResponse
-	if status.Last != nil {
-		if status.Last.Result != nil {
-			result = &swapCashoutStatusResult{
-				Recipient:  status.Last.Result.Recipient,
-				LastPayout: bigint.Wrap(status.Last.Result.TotalPayout),
-				Bounced:    status.Last.Result.Bounced,
-			}
+	if status.Result != nil {
+		result = &swapCashoutStatusResult{
+			Recipient:  status.Result.Recipient,
+			LastPayout: status.Result.TotalPayout,
+			Bounced:    status.Result.Bounced,
 		}
-		chequeResponse = &chequebookLastChequePeerResponse{
-			Chequebook:  status.Last.Cheque.Chequebook.String(),
-			Payout:      bigint.Wrap(status.Last.Cheque.CumulativePayout),
-			Beneficiary: status.Last.Cheque.Beneficiary.String(),
-		}
-		txHash = &status.Last.TxHash
 	}
 
 	jsonhttp.OK(w, swapCashoutStatusResponse{
-		Peer:            peer,
-		TransactionHash: txHash,
-		Cheque:          chequeResponse,
-		Result:          result,
-		UncashedAmount:  bigint.Wrap(status.UncashedAmount),
+		Peer:             peer,
+		TransactionHash:  status.TxHash,
+		Chequebook:       status.Cheque.Chequebook,
+		CumulativePayout: status.Cheque.CumulativePayout,
+		Beneficiary:      status.Cheque.Beneficiary,
+		Result:           result,
 	})
 }
 
@@ -336,18 +327,7 @@ func (s *Service) chequebookWithdrawHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	ctx := r.Context()
-	if price, ok := r.Header[gasPriceHeader]; ok {
-		p, ok := big.NewInt(0).SetString(price[0], 10)
-		if !ok {
-			s.logger.Error("debug api: withdraw: bad gas price")
-			jsonhttp.BadRequest(w, errBadGasPrice)
-			return
-		}
-		ctx = sctx.SetGasPrice(ctx, p)
-	}
-
-	txHash, err := s.chequebook.Withdraw(ctx, amount)
+	txHash, err := s.chequebook.Withdraw(r.Context(), amount)
 	if errors.Is(err, chequebook.ErrInsufficientFunds) {
 		jsonhttp.BadRequest(w, errChequebookInsufficientFunds)
 		s.logger.Debugf("debug api: chequebook withdraw: %v", err)
@@ -379,18 +359,7 @@ func (s *Service) chequebookDepositHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	ctx := r.Context()
-	if price, ok := r.Header[gasPriceHeader]; ok {
-		p, ok := big.NewInt(0).SetString(price[0], 10)
-		if !ok {
-			s.logger.Error("debug api: deposit: bad gas price")
-			jsonhttp.BadRequest(w, errBadGasPrice)
-			return
-		}
-		ctx = sctx.SetGasPrice(ctx, p)
-	}
-
-	txHash, err := s.chequebook.Deposit(ctx, amount)
+	txHash, err := s.chequebook.Deposit(r.Context(), amount)
 	if errors.Is(err, chequebook.ErrInsufficientFunds) {
 		jsonhttp.BadRequest(w, errChequebookInsufficientFunds)
 		s.logger.Debugf("debug api: chequebook deposit: %v", err)

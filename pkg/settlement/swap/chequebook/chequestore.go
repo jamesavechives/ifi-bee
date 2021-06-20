@@ -12,15 +12,11 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethersphere/bee/pkg/crypto"
+	"github.com/ethersphere/bee/pkg/settlement/swap/transaction"
 	"github.com/ethersphere/bee/pkg/storage"
-	"github.com/ethersphere/bee/pkg/transaction"
-)
-
-const (
-	// prefix for the persistence key
-	lastReceivedChequePrefix = "swap_chequebook_last_received_cheque_"
 )
 
 var (
@@ -33,15 +29,14 @@ var (
 	// ErrWrongBeneficiary is the error returned if the cheque has the wrong beneficiary.
 	ErrWrongBeneficiary = errors.New("wrong beneficiary")
 	// ErrBouncingCheque is the error returned if the chequebook is demonstrably illiquid.
-	ErrBouncingCheque = errors.New("bouncing cheque")
-	// ErrChequeValueTooLow is the error returned if the after deduction value of a cheque did not cover 1 accounting credit
-	ErrChequeValueTooLow = errors.New("cheque value lower than acceptable")
+	ErrBouncingCheque        = errors.New("bouncing cheque")
+	lastReceivedChequePrefix = "swap_chequebook_last_received_cheque_"
 )
 
 // ChequeStore handles the verification and storage of received cheques
 type ChequeStore interface {
-	// ReceiveCheque verifies and stores a cheque. It returns the total amount earned.
-	ReceiveCheque(ctx context.Context, cheque *SignedCheque, exchangeRate *big.Int, deduction *big.Int) (*big.Int, error)
+	// ReceiveCheque verifies and stores a cheque. It returns the totam amount earned.
+	ReceiveCheque(ctx context.Context, cheque *SignedCheque) (*big.Int, error)
 	// LastCheque returns the last cheque we received from a specific chequebook.
 	LastCheque(chequebook common.Address) (*SignedCheque, error)
 	// LastCheques returns the last received cheques from every known chequebook.
@@ -49,13 +44,14 @@ type ChequeStore interface {
 }
 
 type chequeStore struct {
-	lock               sync.Mutex
-	store              storage.StateStorer
-	factory            Factory
-	chaindID           int64
-	transactionService transaction.Service
-	beneficiary        common.Address // the beneficiary we expect in cheques sent to us
-	recoverChequeFunc  RecoverChequeFunc
+	lock                  sync.Mutex
+	store                 storage.StateStorer
+	factory               Factory
+	chaindID              int64
+	simpleSwapBindingFunc SimpleSwapBindingFunc
+	backend               transaction.Backend
+	beneficiary           common.Address // the beneficiary we expect in cheques sent to us
+	recoverChequeFunc     RecoverChequeFunc
 }
 
 type RecoverChequeFunc func(cheque *SignedCheque, chainID int64) (common.Address, error)
@@ -63,18 +59,20 @@ type RecoverChequeFunc func(cheque *SignedCheque, chainID int64) (common.Address
 // NewChequeStore creates new ChequeStore
 func NewChequeStore(
 	store storage.StateStorer,
+	backend transaction.Backend,
 	factory Factory,
 	chainID int64,
 	beneficiary common.Address,
-	transactionService transaction.Service,
+	simpleSwapBindingFunc SimpleSwapBindingFunc,
 	recoverChequeFunc RecoverChequeFunc) ChequeStore {
 	return &chequeStore{
-		store:              store,
-		factory:            factory,
-		chaindID:           chainID,
-		transactionService: transactionService,
-		beneficiary:        beneficiary,
-		recoverChequeFunc:  recoverChequeFunc,
+		store:                 store,
+		factory:               factory,
+		backend:               backend,
+		chaindID:              chainID,
+		simpleSwapBindingFunc: simpleSwapBindingFunc,
+		beneficiary:           beneficiary,
+		recoverChequeFunc:     recoverChequeFunc,
 	}
 }
 
@@ -98,7 +96,7 @@ func (s *chequeStore) LastCheque(chequebook common.Address) (*SignedCheque, erro
 }
 
 // ReceiveCheque verifies and stores a cheque. It returns the totam amount earned.
-func (s *chequeStore) ReceiveCheque(ctx context.Context, cheque *SignedCheque, exchangeRate *big.Int, deduction *big.Int) (*big.Int, error) {
+func (s *chequeStore) ReceiveCheque(ctx context.Context, cheque *SignedCheque) (*big.Int, error) {
 	// verify we are the beneficiary
 	if cheque.Beneficiary != s.beneficiary {
 		return nil, ErrWrongBeneficiary
@@ -136,17 +134,17 @@ func (s *chequeStore) ReceiveCheque(ctx context.Context, cheque *SignedCheque, e
 		return nil, ErrChequeNotIncreasing
 	}
 
-	deducedAmount := new(big.Int).Sub(amount, deduction)
+	// blockchain calls below
 
-	if deducedAmount.Cmp(exchangeRate) < 0 {
-		return nil, ErrChequeValueTooLow
+	binding, err := s.simpleSwapBindingFunc(cheque.Chequebook, s.backend)
+	if err != nil {
+		return nil, err
 	}
 
-	// blockchain calls below
-	contract := newChequebookContract(cheque.Chequebook, s.transactionService)
-
 	// this does not change for the same chequebook
-	expectedIssuer, err := contract.Issuer(ctx)
+	expectedIssuer, err := binding.Issuer(&bind.CallOpts{
+		Context: ctx,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -163,12 +161,16 @@ func (s *chequeStore) ReceiveCheque(ctx context.Context, cheque *SignedCheque, e
 
 	// basic liquidity check
 	// could be omitted as it is not particularly useful
-	balance, err := contract.Balance(ctx)
+	balance, err := binding.Balance(&bind.CallOpts{
+		Context: ctx,
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	alreadyPaidOut, err := contract.PaidOut(ctx, s.beneficiary)
+	alreadyPaidOut, err := binding.PaidOut(&bind.CallOpts{
+		Context: ctx,
+	}, s.beneficiary)
 	if err != nil {
 		return nil, err
 	}

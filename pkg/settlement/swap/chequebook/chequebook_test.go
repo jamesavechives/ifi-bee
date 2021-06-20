@@ -11,25 +11,63 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethersphere/bee/pkg/settlement/swap/chequebook"
+	"github.com/ethersphere/bee/pkg/settlement/swap/erc20"
 	erc20mock "github.com/ethersphere/bee/pkg/settlement/swap/erc20/mock"
+	"github.com/ethersphere/bee/pkg/settlement/swap/transaction"
+	"github.com/ethersphere/bee/pkg/settlement/swap/transaction/backendmock"
+	transactionmock "github.com/ethersphere/bee/pkg/settlement/swap/transaction/mock"
 	storemock "github.com/ethersphere/bee/pkg/statestore/mock"
-	"github.com/ethersphere/bee/pkg/transaction"
-	transactionmock "github.com/ethersphere/bee/pkg/transaction/mock"
+	"github.com/ethersphere/bee/pkg/storage"
 )
+
+func newTestChequebook(
+	t *testing.T,
+	backend transaction.Backend,
+	transactionService transaction.Service,
+	address,
+	ownerAdress common.Address,
+	store storage.StateStorer,
+	chequeSigner chequebook.ChequeSigner,
+	erc20 erc20.Service,
+	simpleSwapBinding chequebook.SimpleSwapBinding,
+) (chequebook.Service, error) {
+	return chequebook.New(
+		backend,
+		transactionService,
+		address,
+		ownerAdress,
+		store,
+		chequeSigner,
+		erc20,
+		func(addr common.Address, b bind.ContractBackend) (chequebook.SimpleSwapBinding, error) {
+			if addr != address {
+				t.Fatalf("initialised binding with wrong address. wanted %x, got %x", address, addr)
+			}
+			if b != backend {
+				t.Fatal("initialised binding with wrong backend")
+			}
+			return simpleSwapBinding, nil
+		},
+	)
+}
 
 func TestChequebookAddress(t *testing.T) {
 	address := common.HexToAddress("0xabcd")
 	ownerAdress := common.HexToAddress("0xfff")
-	chequebookService, err := chequebook.New(
+	chequebookService, err := newTestChequebook(
+		t,
+		backendmock.New(),
 		transactionmock.New(),
 		address,
 		ownerAdress,
 		nil,
 		&chequeSignerMock{},
 		erc20mock.New(),
+		&simpleSwapBindingMock{},
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -44,15 +82,20 @@ func TestChequebookBalance(t *testing.T) {
 	address := common.HexToAddress("0xabcd")
 	ownerAdress := common.HexToAddress("0xfff")
 	balance := big.NewInt(10)
-	chequebookService, err := chequebook.New(
-		transactionmock.New(
-			transactionmock.WithABICall(&chequebookABI, address, balance.FillBytes(make([]byte, 32)), "balance"),
-		),
+	chequebookService, err := newTestChequebook(
+		t,
+		backendmock.New(),
+		transactionmock.New(),
 		address,
 		ownerAdress,
 		nil,
 		&chequeSignerMock{},
 		erc20mock.New(),
+		&simpleSwapBindingMock{
+			balance: func(*bind.CallOpts) (*big.Int, error) {
+				return balance, nil
+			},
+		},
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -74,7 +117,9 @@ func TestChequebookDeposit(t *testing.T) {
 	balance := big.NewInt(30)
 	depositAmount := big.NewInt(20)
 	txHash := common.HexToHash("0xdddd")
-	chequebookService, err := chequebook.New(
+	chequebookService, err := newTestChequebook(
+		t,
+		backendmock.New(),
 		transactionmock.New(),
 		address,
 		ownerAdress,
@@ -97,6 +142,7 @@ func TestChequebookDeposit(t *testing.T) {
 				return txHash, nil
 			}),
 		),
+		&simpleSwapBindingMock{},
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -116,7 +162,9 @@ func TestChequebookWaitForDeposit(t *testing.T) {
 	address := common.HexToAddress("0xabcd")
 	ownerAdress := common.HexToAddress("0xfff")
 	txHash := common.HexToHash("0xdddd")
-	chequebookService, err := chequebook.New(
+	chequebookService, err := newTestChequebook(
+		t,
+		backendmock.New(),
 		transactionmock.New(
 			transactionmock.WithWaitForReceiptFunc(func(ctx context.Context, tx common.Hash) (*types.Receipt, error) {
 				if tx != txHash {
@@ -132,6 +180,7 @@ func TestChequebookWaitForDeposit(t *testing.T) {
 		nil,
 		&chequeSignerMock{},
 		erc20mock.New(),
+		&simpleSwapBindingMock{},
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -147,7 +196,9 @@ func TestChequebookWaitForDepositReverted(t *testing.T) {
 	address := common.HexToAddress("0xabcd")
 	ownerAdress := common.HexToAddress("0xfff")
 	txHash := common.HexToHash("0xdddd")
-	chequebookService, err := chequebook.New(
+	chequebookService, err := newTestChequebook(
+		t,
+		backendmock.New(),
 		transactionmock.New(
 			transactionmock.WithWaitForReceiptFunc(func(ctx context.Context, tx common.Hash) (*types.Receipt, error) {
 				if tx != txHash {
@@ -163,6 +214,7 @@ func TestChequebookWaitForDepositReverted(t *testing.T) {
 		nil,
 		&chequeSignerMock{},
 		erc20mock.New(),
+		&simpleSwapBindingMock{},
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -188,22 +240,23 @@ func TestChequebookIssue(t *testing.T) {
 	sig := common.Hex2Bytes("0xffff")
 	chequeSigner := &chequeSignerMock{}
 
-	chequebookService, err := chequebook.New(
-		transactionmock.New(
-			transactionmock.WithABICallSequence(
-				transactionmock.ABICall(&chequebookABI, address, big.NewInt(100).FillBytes(make([]byte, 32)), "balance"),
-				transactionmock.ABICall(&chequebookABI, address, big.NewInt(0).FillBytes(make([]byte, 32)), "totalPaidOut"),
-				transactionmock.ABICall(&chequebookABI, address, big.NewInt(100).FillBytes(make([]byte, 32)), "balance"),
-				transactionmock.ABICall(&chequebookABI, address, big.NewInt(0).FillBytes(make([]byte, 32)), "totalPaidOut"),
-				transactionmock.ABICall(&chequebookABI, address, big.NewInt(100).FillBytes(make([]byte, 32)), "balance"),
-				transactionmock.ABICall(&chequebookABI, address, big.NewInt(0).FillBytes(make([]byte, 32)), "totalPaidOut"),
-			),
-		),
+	chequebookService, err := newTestChequebook(
+		t,
+		backendmock.New(),
+		transactionmock.New(),
 		address,
 		ownerAdress,
 		store,
 		chequeSigner,
 		erc20mock.New(),
+		&simpleSwapBindingMock{
+			balance: func(*bind.CallOpts) (*big.Int, error) {
+				return big.NewInt(100), nil
+			},
+			totalPaidOut: func(*bind.CallOpts) (*big.Int, error) {
+				return big.NewInt(0), nil
+			},
+		},
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -337,13 +390,23 @@ func TestChequebookIssueErrorSend(t *testing.T) {
 	sig := common.Hex2Bytes("0xffff")
 	chequeSigner := &chequeSignerMock{}
 
-	chequebookService, err := chequebook.New(
+	chequebookService, err := newTestChequebook(
+		t,
+		backendmock.New(),
 		transactionmock.New(),
 		address,
 		ownerAdress,
 		store,
 		chequeSigner,
 		erc20mock.New(),
+		&simpleSwapBindingMock{
+			balance: func(*bind.CallOpts) (*big.Int, error) {
+				return amount, nil
+			},
+			totalPaidOut: func(*bind.CallOpts) (*big.Int, error) {
+				return big.NewInt(0), nil
+			},
+		},
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -374,18 +437,23 @@ func TestChequebookIssueOutOfFunds(t *testing.T) {
 	store := storemock.NewStateStore()
 	amount := big.NewInt(20)
 
-	chequebookService, err := chequebook.New(
-		transactionmock.New(
-			transactionmock.WithABICallSequence(
-				transactionmock.ABICall(&chequebookABI, address, big.NewInt(0).FillBytes(make([]byte, 32)), "balance"),
-				transactionmock.ABICall(&chequebookABI, address, big.NewInt(0).FillBytes(make([]byte, 32)), "totalPaidOut"),
-			),
-		),
+	chequebookService, err := newTestChequebook(
+		t,
+		backendmock.New(),
+		transactionmock.New(),
 		address,
 		ownerAdress,
 		store,
 		&chequeSignerMock{},
 		erc20mock.New(),
+		&simpleSwapBindingMock{
+			balance: func(*bind.CallOpts) (*big.Int, error) {
+				return big.NewInt(0), nil
+			},
+			totalPaidOut: func(*bind.CallOpts) (*big.Int, error) {
+				return big.NewInt(0), nil
+			},
+		},
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -413,19 +481,33 @@ func TestChequebookWithdraw(t *testing.T) {
 	withdrawAmount := big.NewInt(20)
 	txHash := common.HexToHash("0xdddd")
 	store := storemock.NewStateStore()
-	chequebookService, err := chequebook.New(
+	chequebookService, err := newTestChequebook(
+		t,
+		backendmock.New(),
 		transactionmock.New(
-			transactionmock.WithABICallSequence(
-				transactionmock.ABICall(&chequebookABI, address, balance.FillBytes(make([]byte, 32)), "balance"),
-				transactionmock.ABICall(&chequebookABI, address, big.NewInt(0).FillBytes(make([]byte, 32)), "totalPaidOut"),
-			),
-			transactionmock.WithABISend(&chequebookABI, txHash, address, big.NewInt(0), "withdraw", withdrawAmount),
+			transactionmock.WithSendFunc(func(c context.Context, request *transaction.TxRequest) (common.Hash, error) {
+				if request.To != nil && *request.To != address {
+					t.Fatalf("sending to wrong contract. wanted %x, got %x", address, request.To)
+				}
+				if request.Value.Cmp(big.NewInt(0)) != 0 {
+					t.Fatal("sending ether to token contract")
+				}
+				return txHash, nil
+			}),
 		),
 		address,
 		ownerAdress,
 		store,
 		&chequeSignerMock{},
 		erc20mock.New(),
+		&simpleSwapBindingMock{
+			balance: func(*bind.CallOpts) (*big.Int, error) {
+				return balance, nil
+			},
+			totalPaidOut: func(*bind.CallOpts) (*big.Int, error) {
+				return big.NewInt(0), nil
+			},
+		},
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -444,22 +526,40 @@ func TestChequebookWithdraw(t *testing.T) {
 func TestChequebookWithdrawInsufficientFunds(t *testing.T) {
 	address := common.HexToAddress("0xabcd")
 	ownerAdress := common.HexToAddress("0xfff")
+	balance := big.NewInt(30)
 	withdrawAmount := big.NewInt(20)
 	txHash := common.HexToHash("0xdddd")
 	store := storemock.NewStateStore()
-	chequebookService, err := chequebook.New(
+	chequebookService, err := newTestChequebook(
+		t,
+		backendmock.New(),
 		transactionmock.New(
-			transactionmock.WithABISend(&chequebookABI, txHash, address, big.NewInt(0), "withdraw", withdrawAmount),
-			transactionmock.WithABICallSequence(
-				transactionmock.ABICall(&chequebookABI, address, big.NewInt(0).FillBytes(make([]byte, 32)), "balance"),
-				transactionmock.ABICall(&chequebookABI, address, big.NewInt(0).FillBytes(make([]byte, 32)), "totalPaidOut"),
-			),
+			transactionmock.WithSendFunc(func(c context.Context, request *transaction.TxRequest) (common.Hash, error) {
+				if request.To != nil && *request.To != address {
+					t.Fatalf("sending to wrong contract. wanted %x, got %x", address, request.To)
+				}
+				if request.Value.Cmp(big.NewInt(0)) != 0 {
+					t.Fatal("sending ether to token contract")
+				}
+				return txHash, nil
+			}),
+			transactionmock.WithCallFunc(func(ctx context.Context, request *transaction.TxRequest) (result []byte, err error) {
+				return balance.FillBytes(make([]byte, 32)), nil
+			}),
 		),
 		address,
 		ownerAdress,
 		store,
 		&chequeSignerMock{},
 		erc20mock.New(),
+		&simpleSwapBindingMock{
+			balance: func(*bind.CallOpts) (*big.Int, error) {
+				return big.NewInt(0), nil
+			},
+			totalPaidOut: func(*bind.CallOpts) (*big.Int, error) {
+				return big.NewInt(0), nil
+			},
+		},
 	)
 	if err != nil {
 		t.Fatal(err)

@@ -11,13 +11,11 @@ import (
 )
 
 func (c *command) initVersionCmd() {
-	v := &cobra.Command{
+	c.root.AddCommand(&cobra.Command{
 		Use:   "version",
 		Short: "Print version number",
 		Run: func(cmd *cobra.Command, args []string) {
 			cmd.Println(bee.Version)
 		},
-	}
-	v.SetOut(c.root.OutOrStdout())
-	c.root.AddCommand(v)
+	})
 }

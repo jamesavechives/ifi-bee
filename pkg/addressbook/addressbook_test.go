@@ -7,7 +7,6 @@ package addressbook_test
 import (
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethersphere/bee/pkg/addressbook"
 	"github.com/ethersphere/bee/pkg/bzz"
 	"github.com/ethersphere/bee/pkg/crypto"
@@ -31,7 +30,6 @@ func run(t *testing.T, f bookFunc) {
 	store := f(t)
 	addr1 := swarm.NewAddress([]byte{0, 1, 2, 3})
 	addr2 := swarm.NewAddress([]byte{0, 1, 2, 4})
-	trxHash := common.HexToHash("0x1").Bytes()
 	multiaddr, err := ma.NewMultiaddr("/ip4/1.1.1.1")
 	if err != nil {
 		t.Fatal(err)
@@ -42,7 +40,7 @@ func run(t *testing.T, f bookFunc) {
 		t.Fatal(err)
 	}
 
-	bzzAddr, err := bzz.NewAddress(crypto.NewDefaultSigner(pk), multiaddr, addr1, 1, trxHash)
+	bzzAddr, err := bzz.NewAddress(crypto.NewDefaultSigner(pk), multiaddr, addr1, 1)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"github.com/ethersphere/bee/pkg/flipflop"
-	"github.com/ethersphere/bee/pkg/postage"
 	"github.com/ethersphere/bee/pkg/shed"
 	"github.com/ethersphere/bee/pkg/swarm"
 )
@@ -76,9 +75,8 @@ func (db *DB) SubscribePush(ctx context.Context) (c <-chan swarm.Chunk, stop fun
 						return true, err
 					}
 
-					stamp := postage.NewStamp(dataItem.BatchID, dataItem.Index, dataItem.Timestamp, dataItem.Sig)
 					select {
-					case chunks <- swarm.NewChunk(swarm.NewAddress(dataItem.Address), dataItem.Data).WithTagID(item.Tag).WithStamp(stamp):
+					case chunks <- swarm.NewChunk(swarm.NewAddress(dataItem.Address), dataItem.Data).WithTagID(item.Tag):
 						count++
 						// set next iteration start item
 						// when its chunk is successfully sent to channel

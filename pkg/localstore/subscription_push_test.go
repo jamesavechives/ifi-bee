@@ -19,7 +19,6 @@ package localstore
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"sync"
 	"testing"
@@ -75,11 +74,8 @@ func TestDB_SubscribePush(t *testing.T) {
 
 	// receive and validate addresses from the subscription
 	go func() {
-		var (
-			err, ierr           error
-			i                   int // address index
-			gotStamp, wantStamp []byte
-		)
+		var err error
+		var i int // address index
 		for {
 			select {
 			case got, ok := <-ch:
@@ -97,16 +93,6 @@ func TestDB_SubscribePush(t *testing.T) {
 				if !got.Address().Equal(want.Address()) {
 					err = fmt.Errorf("got chunk %v address %s, want %s", i, got.Address(), want.Address())
 				}
-				if gotStamp, ierr = got.Stamp().MarshalBinary(); ierr != nil {
-					err = ierr
-				}
-				if wantStamp, ierr = want.Stamp().MarshalBinary(); ierr != nil {
-					err = ierr
-				}
-				if !bytes.Equal(gotStamp, wantStamp) {
-					err = errors.New("stamps don't match")
-				}
-
 				i++
 				// send one and only one error per received address
 				select {

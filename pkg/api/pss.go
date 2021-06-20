@@ -8,7 +8,6 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"encoding/hex"
-	"errors"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -16,7 +15,6 @@ import (
 
 	"github.com/ethersphere/bee/pkg/crypto"
 	"github.com/ethersphere/bee/pkg/jsonhttp"
-	"github.com/ethersphere/bee/pkg/postage"
 	"github.com/ethersphere/bee/pkg/pss"
 	"github.com/ethersphere/bee/pkg/swarm"
 	"github.com/gorilla/mux"
@@ -38,15 +36,9 @@ func (s *server) pssPostHandler(w http.ResponseWriter, r *http.Request) {
 
 	for _, v := range tgts {
 		target, err := hex.DecodeString(v)
-		if err != nil {
-			s.logger.Debugf("pss send: bad target (%s): %v", target, err)
-			s.logger.Errorf("pss send: bad target (%s): %v", target, err)
-			jsonhttp.BadRequest(w, nil)
-			return
-		}
-		if len(target) > targetMaxLength {
-			s.logger.Debugf("pss send: bad target length: %d", len(target))
-			s.logger.Errorf("pss send: bad target length: %d", len(target))
+		if err != nil || len(target) > targetMaxLength {
+			s.logger.Debugf("pss send: bad targets: %v", err)
+			s.logger.Error("pss send: bad targets")
 			jsonhttp.BadRequest(w, nil)
 			return
 		}
@@ -77,43 +69,16 @@ func (s *server) pssPostHandler(w http.ResponseWriter, r *http.Request) {
 		jsonhttp.InternalServerError(w, nil)
 		return
 	}
-	batch, err := requestPostageBatchId(r)
-	if err != nil {
-		s.logger.Debugf("pss: postage batch id: %v", err)
-		s.logger.Error("pss: postage batch id")
-		jsonhttp.BadRequest(w, "invalid postage batch id")
-		return
-	}
-	i, err := s.post.GetStampIssuer(batch)
-	if err != nil {
-		s.logger.Debugf("pss: postage batch issuer: %v", err)
-		s.logger.Error("pss: postage batch issue")
-		switch {
-		case errors.Is(err, postage.ErrNotFound):
-			jsonhttp.BadRequest(w, "batch not found")
-		case errors.Is(err, postage.ErrNotUsable):
-			jsonhttp.BadRequest(w, "batch not usable yet")
-		default:
-			jsonhttp.BadRequest(w, "postage stamp issuer")
-		}
-		return
-	}
-	stamper := postage.NewStamper(i, s.signer)
 
-	err = s.pss.Send(r.Context(), topic, payload, stamper, recipient, targets)
+	err = s.pss.Send(r.Context(), topic, payload, recipient, targets)
 	if err != nil {
 		s.logger.Debugf("pss send payload: %v. topic: %s", err, topicVar)
 		s.logger.Error("pss send payload")
-		switch {
-		case errors.Is(err, postage.ErrBucketFull):
-			jsonhttp.PaymentRequired(w, "batch is overissued")
-		default:
-			jsonhttp.InternalServerError(w, nil)
-		}
+		jsonhttp.InternalServerError(w, nil)
 		return
 	}
 
-	jsonhttp.Created(w, nil)
+	jsonhttp.OK(w, nil)
 }
 
 func (s *server) pssWsHandler(w http.ResponseWriter, r *http.Request) {

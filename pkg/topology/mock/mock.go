@@ -14,12 +14,9 @@ import (
 
 type mock struct {
 	peers           []swarm.Address
-	depth           uint8
 	closestPeer     swarm.Address
 	closestPeerErr  error
-	peersErr        error
 	addPeersErr     error
-	isWithinFunc    func(c swarm.Address) bool
 	marshalJSONFunc func() ([]byte, error)
 	mtx             sync.Mutex
 }
@@ -33,12 +30,6 @@ func WithPeers(peers ...swarm.Address) Option {
 func WithAddPeersErr(err error) Option {
 	return optionFunc(func(d *mock) {
 		d.addPeersErr = err
-	})
-}
-
-func WithNeighborhoodDepth(dd uint8) Option {
-	return optionFunc(func(d *mock) {
-		d.depth = dd
 	})
 }
 
@@ -60,12 +51,6 @@ func WithMarshalJSONFunc(f func() ([]byte, error)) Option {
 	})
 }
 
-func WithIsWithinFunc(f func(swarm.Address) bool) Option {
-	return optionFunc(func(d *mock) {
-		d.isWithinFunc = f
-	})
-}
-
 func NewTopologyDriver(opts ...Option) topology.Driver {
 	d := new(mock)
 	for _, o := range opts {
@@ -74,16 +59,22 @@ func NewTopologyDriver(opts ...Option) topology.Driver {
 	return d
 }
 
-func (d *mock) AddPeers(addrs ...swarm.Address) {
-	d.mtx.Lock()
-	defer d.mtx.Unlock()
+func (d *mock) AddPeers(_ context.Context, addrs ...swarm.Address) error {
+	if d.addPeersErr != nil {
+		return d.addPeersErr
+	}
 
-	d.peers = append(d.peers, addrs...)
+	for _, addr := range addrs {
+		d.mtx.Lock()
+		d.peers = append(d.peers, addr)
+		d.mtx.Unlock()
+	}
+
+	return nil
 }
 
 func (d *mock) Connected(ctx context.Context, addr swarm.Address) error {
-	d.AddPeers(addr)
-	return nil
+	return d.AddPeers(ctx, addr)
 }
 
 func (d *mock) Disconnected(swarm.Address) {
@@ -94,7 +85,7 @@ func (d *mock) Peers() []swarm.Address {
 	return d.peers
 }
 
-func (d *mock) ClosestPeer(addr swarm.Address, _ bool, skipPeers ...swarm.Address) (peerAddr swarm.Address, err error) {
+func (d *mock) ClosestPeer(_ swarm.Address, skipPeers ...swarm.Address) (peerAddr swarm.Address, err error) {
 	if len(skipPeers) == 0 {
 		if d.closestPeerErr != nil {
 			return d.closestPeer, d.closestPeerErr
@@ -106,10 +97,6 @@ func (d *mock) ClosestPeer(addr swarm.Address, _ bool, skipPeers ...swarm.Addres
 
 	d.mtx.Lock()
 	defer d.mtx.Unlock()
-
-	if len(d.peers) == 0 {
-		return peerAddr, topology.ErrNotFound
-	}
 
 	skipPeer := false
 	for _, p := range d.peers {
@@ -124,13 +111,7 @@ func (d *mock) ClosestPeer(addr swarm.Address, _ bool, skipPeers ...swarm.Addres
 			continue
 		}
 
-		if peerAddr.IsZero() {
-			peerAddr = p
-		}
-
-		if cmp, _ := swarm.DistanceCmp(addr.Bytes(), p.Bytes(), peerAddr.Bytes()); cmp == 1 {
-			peerAddr = p
-		}
+		peerAddr = p
 	}
 
 	if peerAddr.IsZero() {
@@ -143,33 +124,14 @@ func (d *mock) SubscribePeersChange() (c <-chan struct{}, unsubscribe func()) {
 	return c, unsubscribe
 }
 
-func (m *mock) NeighborhoodDepth() uint8 {
-	return m.depth
-}
-
-func (m *mock) IsWithinDepth(addr swarm.Address) bool {
-	if m.isWithinFunc != nil {
-		return m.isWithinFunc(addr)
-	}
-	return false
-}
-
-func (m *mock) EachNeighbor(f topology.EachPeerFunc) error {
-	return m.EachPeer(f)
-}
-
-func (*mock) EachNeighborRev(topology.EachPeerFunc) error {
-	panic("not implemented") // TODO: Implement
+func (*mock) NeighborhoodDepth() uint8 {
+	return 0
 }
 
 // EachPeer iterates from closest bin to farthest
 func (d *mock) EachPeer(f topology.EachPeerFunc) (err error) {
 	d.mtx.Lock()
 	defer d.mtx.Unlock()
-
-	if d.peersErr != nil {
-		return d.peersErr
-	}
 
 	for i, p := range d.peers {
 		_, _, err = f(p, uint8(i))
@@ -196,12 +158,13 @@ func (d *mock) EachPeerRev(f topology.EachPeerFunc) (err error) {
 	return nil
 }
 
-func (d *mock) Snapshot() *topology.KadParams {
-	return new(topology.KadParams)
+func (d *mock) MarshalJSON() ([]byte, error) {
+	return d.marshalJSONFunc()
 }
 
-func (d *mock) Halt()        {}
-func (d *mock) Close() error { return nil }
+func (d *mock) Close() error {
+	return nil
+}
 
 type Option interface {
 	apply(*mock)

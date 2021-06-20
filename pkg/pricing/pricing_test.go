@@ -7,13 +7,11 @@ package pricing_test
 import (
 	"bytes"
 	"context"
-	"errors"
 	"io/ioutil"
 	"math/big"
 	"testing"
 
 	"github.com/ethersphere/bee/pkg/logging"
-	"github.com/ethersphere/bee/pkg/p2p"
 	"github.com/ethersphere/bee/pkg/p2p/protobuf"
 	"github.com/ethersphere/bee/pkg/p2p/streamtest"
 	"github.com/ethersphere/bee/pkg/pricing"
@@ -21,15 +19,15 @@ import (
 	"github.com/ethersphere/bee/pkg/swarm"
 )
 
-type testThresholdObserver struct {
+type testObserver struct {
 	called           bool
 	peer             swarm.Address
 	paymentThreshold *big.Int
 }
 
-func (t *testThresholdObserver) NotifyPaymentThreshold(peerAddr swarm.Address, paymentThreshold *big.Int) error {
+func (t *testObserver) NotifyPaymentThreshold(peer swarm.Address, paymentThreshold *big.Int) error {
 	t.called = true
-	t.peer = peerAddr
+	t.peer = peer
 	t.paymentThreshold = paymentThreshold
 	return nil
 }
@@ -37,9 +35,9 @@ func (t *testThresholdObserver) NotifyPaymentThreshold(peerAddr swarm.Address, p
 func TestAnnouncePaymentThreshold(t *testing.T) {
 	logger := logging.New(ioutil.Discard, 0)
 	testThreshold := big.NewInt(100000)
-	observer := &testThresholdObserver{}
+	observer := &testObserver{}
 
-	recipient := pricing.New(nil, logger, testThreshold, big.NewInt(1000))
+	recipient := pricing.New(nil, logger, testThreshold)
 	recipient.SetPaymentThresholdObserver(observer)
 
 	peerID := swarm.MustParseHexAddress("9ee7add7")
@@ -49,9 +47,9 @@ func TestAnnouncePaymentThreshold(t *testing.T) {
 		streamtest.WithBaseAddr(peerID),
 	)
 
-	payer := pricing.New(recorder, logger, testThreshold, big.NewInt(1000))
+	payer := pricing.New(recorder, logger, testThreshold)
 
-	paymentThreshold := big.NewInt(100000)
+	paymentThreshold := big.NewInt(10000)
 
 	err := payer.AnnouncePaymentThreshold(context.Background(), peerID, paymentThreshold)
 	if err != nil {
@@ -96,61 +94,5 @@ func TestAnnouncePaymentThreshold(t *testing.T) {
 
 	if !observer.peer.Equal(peerID) {
 		t.Fatalf("observer called with wrong peer. got %v, want %v", observer.peer, peerID)
-	}
-}
-
-func TestAnnouncePaymentWithInsufficientThreshold(t *testing.T) {
-	logger := logging.New(ioutil.Discard, 0)
-	testThreshold := big.NewInt(100_000)
-	observer := &testThresholdObserver{}
-
-	minThreshold := big.NewInt(1_000_000) // above requested threashold
-
-	recipient := pricing.New(nil, logger, testThreshold, minThreshold)
-	recipient.SetPaymentThresholdObserver(observer)
-
-	peerID := swarm.MustParseHexAddress("9ee7add7")
-
-	recorder := streamtest.New(
-		streamtest.WithProtocols(recipient.Protocol()),
-		streamtest.WithBaseAddr(peerID),
-	)
-
-	payer := pricing.New(recorder, logger, testThreshold, minThreshold)
-
-	paymentThreshold := big.NewInt(100_000)
-
-	err := payer.AnnouncePaymentThreshold(context.Background(), peerID, paymentThreshold)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	records, err := recorder.Records(peerID, "pricing", "1.0.0", "pricing")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if l := len(records); l != 1 {
-		t.Fatalf("got %v records, want %v", l, 1)
-	}
-
-	record := records[0]
-
-	if record.Err() == nil {
-		t.Fatal("expected error")
-	}
-
-	payerErr, ok := record.Err().(*p2p.DisconnectError)
-
-	if !ok {
-		t.Fatalf("wanted %v, got %v", p2p.DisconnectError{}, record.Err())
-	}
-
-	if !errors.Is(payerErr, pricing.ErrThresholdTooLow) {
-		t.Fatalf("wanted error %v, got %v", pricing.ErrThresholdTooLow, err)
-	}
-
-	if observer.called {
-		t.Fatal("unexpected call to the observer")
 	}
 }

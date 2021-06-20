@@ -11,14 +11,14 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethersphere/bee/pkg/settlement/swap/erc20"
-	"github.com/ethersphere/bee/pkg/transaction"
-	backendmock "github.com/ethersphere/bee/pkg/transaction/backendmock"
-	transactionmock "github.com/ethersphere/bee/pkg/transaction/mock"
-	"github.com/ethersphere/go-sw3-abi/sw3abi"
+	"github.com/ethersphere/bee/pkg/settlement/swap/transaction"
+	backendmock "github.com/ethersphere/bee/pkg/settlement/swap/transaction/backendmock"
+	transactionmock "github.com/ethersphere/bee/pkg/settlement/swap/transaction/mock"
+	"github.com/ethersphere/sw3-bindings/v3/simpleswapfactory"
 )
 
 var (
-	erc20ABI = transaction.ParseABIUnchecked(sw3abi.ERC20ABIv0_3_1)
+	erc20ABI = transaction.ParseABIUnchecked(simpleswapfactory.ERC20ABI)
 )
 
 func TestBalanceOf(t *testing.T) {
@@ -31,7 +31,6 @@ func TestBalanceOf(t *testing.T) {
 		transactionmock.New(
 			transactionmock.WithABICall(
 				&erc20ABI,
-				erc20Address,
 				expectedBalance.FillBytes(make([]byte, 32)),
 				"balanceOf",
 				account,

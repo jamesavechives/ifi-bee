@@ -29,7 +29,7 @@ const (
 	// ProtocolName is the text of the name of the handshake protocol.
 	ProtocolName = "handshake"
 	// ProtocolVersion is the current handshake protocol version.
-	ProtocolVersion = "4.0.0"
+	ProtocolVersion = "2.0.0"
 	// StreamName is the name of the stream used for handshake purposes.
 	StreamName = "handshake"
 	// MaxWelcomeMessageLength is maximum number of characters allowed in the welcome message.
@@ -59,18 +59,12 @@ type AdvertisableAddressResolver interface {
 	Resolve(observedAdddress ma.Multiaddr) (ma.Multiaddr, error)
 }
 
-type SenderMatcher interface {
-	Matches(ctx context.Context, tx []byte, networkID uint64, senderOverlay swarm.Address) ([]byte, error)
-}
-
 // Service can perform initiate or handle a handshake between peers.
 type Service struct {
 	signer                crypto.Signer
 	advertisableAddresser AdvertisableAddressResolver
-	senderMatcher         SenderMatcher
 	overlay               swarm.Address
-	fullNode              bool
-	transaction           []byte
+	lightNode             bool
 	networkID             uint64
 	welcomeMessage        atomic.Value
 	receivedHandshakes    map[libp2ppeer.ID]struct{}
@@ -83,19 +77,11 @@ type Service struct {
 // Info contains the information received from the handshake.
 type Info struct {
 	BzzAddress *bzz.Address
-	FullNode   bool
-}
-
-func (i *Info) LightString() string {
-	if !i.FullNode {
-		return " (light)"
-	}
-
-	return ""
+	Light      bool
 }
 
 // New creates a new handshake Service.
-func New(signer crypto.Signer, advertisableAddresser AdvertisableAddressResolver, isSender SenderMatcher, overlay swarm.Address, networkID uint64, fullNode bool, transaction []byte, welcomeMessage string, logger logging.Logger) (*Service, error) {
+func New(signer crypto.Signer, advertisableAddresser AdvertisableAddressResolver, overlay swarm.Address, networkID uint64, lighNode bool, welcomeMessage string, logger logging.Logger) (*Service, error) {
 	if len(welcomeMessage) > MaxWelcomeMessageLength {
 		return nil, ErrWelcomeMessageLength
 	}
@@ -105,9 +91,7 @@ func New(signer crypto.Signer, advertisableAddresser AdvertisableAddressResolver
 		advertisableAddresser: advertisableAddresser,
 		overlay:               overlay,
 		networkID:             networkID,
-		fullNode:              fullNode,
-		transaction:           transaction,
-		senderMatcher:         isSender,
+		lightNode:             lighNode,
 		receivedHandshakes:    make(map[libp2ppeer.ID]struct{}),
 		logger:                logger,
 		Notifiee:              new(network.NoopNotifiee),
@@ -144,6 +128,11 @@ func (s *Service) Handshake(ctx context.Context, stream p2p.Stream, peerMultiadd
 		return nil, fmt.Errorf("read synack message: %w", err)
 	}
 
+	remoteBzzAddress, err := s.parseCheckAck(resp.Ack)
+	if err != nil {
+		return nil, err
+	}
+
 	observedUnderlay, err := ma.NewMultiaddrBytes(resp.Syn.ObservedUnderlay)
 	if err != nil {
 		return nil, ErrInvalidSyn
@@ -154,24 +143,12 @@ func (s *Service) Handshake(ctx context.Context, stream p2p.Stream, peerMultiadd
 		return nil, err
 	}
 
-	bzzAddress, err := bzz.NewAddress(s.signer, advertisableUnderlay, s.overlay, s.networkID, s.transaction)
+	bzzAddress, err := bzz.NewAddress(s.signer, advertisableUnderlay, s.overlay, s.networkID)
 	if err != nil {
 		return nil, err
 	}
 
 	advertisableUnderlayBytes, err := bzzAddress.Underlay.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-
-	overlay := swarm.NewAddress(resp.Ack.Address.Overlay)
-
-	blockHash, err := s.senderMatcher.Matches(ctx, resp.Ack.Transaction, s.networkID, overlay)
-	if err != nil {
-		return nil, fmt.Errorf("overlay %v verification failed: %w", overlay, err)
-	}
-
-	remoteBzzAddress, err := s.parseCheckAck(resp.Ack, blockHash)
 	if err != nil {
 		return nil, err
 	}
@@ -185,8 +162,7 @@ func (s *Service) Handshake(ctx context.Context, stream p2p.Stream, peerMultiadd
 			Signature: bzzAddress.Signature,
 		},
 		NetworkID:      s.networkID,
-		FullNode:       s.fullNode,
-		Transaction:    s.transaction,
+		Light:          s.lightNode,
 		WelcomeMessage: welcomeMessage,
 	}); err != nil {
 		return nil, fmt.Errorf("write ack message: %w", err)
@@ -199,7 +175,7 @@ func (s *Service) Handshake(ctx context.Context, stream p2p.Stream, peerMultiadd
 
 	return &Info{
 		BzzAddress: remoteBzzAddress,
-		FullNode:   resp.Ack.FullNode,
+		Light:      resp.Ack.Light,
 	}, nil
 }
 
@@ -242,7 +218,7 @@ func (s *Service) Handle(ctx context.Context, stream p2p.Stream, remoteMultiaddr
 		return nil, err
 	}
 
-	bzzAddress, err := bzz.NewAddress(s.signer, advertisableUnderlay, s.overlay, s.networkID, s.transaction)
+	bzzAddress, err := bzz.NewAddress(s.signer, advertisableUnderlay, s.overlay, s.networkID)
 	if err != nil {
 		return nil, err
 	}
@@ -265,8 +241,7 @@ func (s *Service) Handle(ctx context.Context, stream p2p.Stream, remoteMultiaddr
 				Signature: bzzAddress.Signature,
 			},
 			NetworkID:      s.networkID,
-			FullNode:       s.fullNode,
-			Transaction:    s.transaction,
+			Light:          s.lightNode,
 			WelcomeMessage: welcomeMessage,
 		},
 	}); err != nil {
@@ -278,26 +253,16 @@ func (s *Service) Handle(ctx context.Context, stream p2p.Stream, remoteMultiaddr
 		return nil, fmt.Errorf("read ack message: %w", err)
 	}
 
-	overlay := swarm.NewAddress(ack.Address.Overlay)
-
-	blockHash, err := s.senderMatcher.Matches(ctx, ack.Transaction, s.networkID, overlay)
-	if err != nil {
-		return nil, fmt.Errorf("overlay %v verification failed: %w", overlay, err)
-	}
-
-	remoteBzzAddress, err := s.parseCheckAck(&ack, blockHash)
+	remoteBzzAddress, err := s.parseCheckAck(&ack)
 	if err != nil {
 		return nil, err
 	}
 
 	s.logger.Tracef("handshake finished for peer (inbound) %s", remoteBzzAddress.Overlay.String())
-	if len(ack.WelcomeMessage) > 0 {
-		s.logger.Infof("greeting \"%s\" from peer: %s", ack.WelcomeMessage, remoteBzzAddress.Overlay.String())
-	}
 
 	return &Info{
 		BzzAddress: remoteBzzAddress,
-		FullNode:   ack.FullNode,
+		Light:      ack.Light,
 	}, nil
 }
 
@@ -326,12 +291,12 @@ func buildFullMA(addr ma.Multiaddr, peerID libp2ppeer.ID) (ma.Multiaddr, error) 
 	return ma.NewMultiaddr(fmt.Sprintf("%s/p2p/%s", addr.String(), peerID.Pretty()))
 }
 
-func (s *Service) parseCheckAck(ack *pb.Ack, blockHash []byte) (*bzz.Address, error) {
+func (s *Service) parseCheckAck(ack *pb.Ack) (*bzz.Address, error) {
 	if ack.NetworkID != s.networkID {
 		return nil, ErrNetworkIDIncompatible
 	}
 
-	bzzAddress, err := bzz.ParseAddress(ack.Address.Underlay, ack.Address.Overlay, ack.Address.Signature, ack.Transaction, blockHash, s.networkID)
+	bzzAddress, err := bzz.ParseAddress(ack.Address.Underlay, ack.Address.Overlay, ack.Address.Signature, s.networkID)
 	if err != nil {
 		return nil, ErrInvalidAck
 	}

@@ -6,15 +6,14 @@ package cmd
 
 import (
 	"fmt"
+	"io/ioutil"
 	"strings"
-	"time"
 
-	"github.com/ethersphere/bee/pkg/crypto"
+	"github.com/ethersphere/bee/pkg/logging"
 	"github.com/ethersphere/bee/pkg/node"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
-
-const blocktime = 15
 
 func (c *command) initDeployCmd() error {
 	cmd := &cobra.Command{
@@ -25,18 +24,28 @@ func (c *command) initDeployCmd() error {
 				return cmd.Help()
 			}
 
-			v := strings.ToLower(c.config.GetString(optionNameVerbosity))
-			logger, err := newLogger(cmd, v)
-			if err != nil {
-				return fmt.Errorf("new logger: %v", err)
+			var logger logging.Logger
+			switch v := strings.ToLower(c.config.GetString(optionNameVerbosity)); v {
+			case "0", "silent":
+				logger = logging.New(ioutil.Discard, 0)
+			case "1", "error":
+				logger = logging.New(cmd.OutOrStdout(), logrus.ErrorLevel)
+			case "2", "warn":
+				logger = logging.New(cmd.OutOrStdout(), logrus.WarnLevel)
+			case "3", "info":
+				logger = logging.New(cmd.OutOrStdout(), logrus.InfoLevel)
+			case "4", "debug":
+				logger = logging.New(cmd.OutOrStdout(), logrus.DebugLevel)
+			case "5", "trace":
+				logger = logging.New(cmd.OutOrStdout(), logrus.TraceLevel)
+			default:
+				return fmt.Errorf("unknown verbosity level %q", v)
 			}
 
 			dataDir := c.config.GetString(optionNameDataDir)
 			factoryAddress := c.config.GetString(optionNameSwapFactoryAddress)
 			swapInitialDeposit := c.config.GetString(optionNameSwapInitialDeposit)
 			swapEndpoint := c.config.GetString(optionNameSwapEndpoint)
-			deployGasPrice := c.config.GetString(optionNameSwapDeploymentGasPrice)
-			networkID := c.config.GetUint64(optionNameNetworkID)
 
 			stateStore, err := node.InitStateStore(logger, dataDir)
 			if err != nil {
@@ -51,21 +60,24 @@ func (c *command) initDeployCmd() error {
 			}
 			signer := signerConfig.signer
 
+			err = node.CheckOverlayWithStore(signerConfig.address, stateStore)
+			if err != nil {
+				return err
+			}
+
 			ctx := cmd.Context()
 
-			swapBackend, overlayEthAddress, chainID, transactionMonitor, transactionService, err := node.InitChain(
+			swapBackend, overlayEthAddress, chainID, transactionService, err := node.InitChain(
 				ctx,
 				logger,
 				stateStore,
 				swapEndpoint,
 				signer,
-				blocktime,
 			)
 			if err != nil {
 				return err
 			}
 			defer swapBackend.Close()
-			defer transactionMonitor.Close()
 
 			chequebookFactory, err := node.InitChequebookFactory(
 				logger,
@@ -73,7 +85,6 @@ func (c *command) initDeployCmd() error {
 				chainID,
 				transactionService,
 				factoryAddress,
-				nil,
 			)
 			if err != nil {
 				return err
@@ -90,35 +101,7 @@ func (c *command) initDeployCmd() error {
 				transactionService,
 				chequebookFactory,
 				swapInitialDeposit,
-				deployGasPrice,
 			)
-			if err != nil {
-				return err
-			}
-
-			optionTrxHash := c.config.GetString(optionNameTransactionHash)
-			optionBlockHash := c.config.GetString(optionNameBlockHash)
-
-			txHash, err := node.GetTxHash(stateStore, logger, optionTrxHash)
-			if err != nil {
-				return fmt.Errorf("invalid transaction hash: %w", err)
-			}
-
-			blockTime := time.Duration(c.config.GetUint64(optionNameBlockTime)) * time.Second
-
-			blockHash, err := node.GetTxNextBlock(ctx, logger, swapBackend, transactionMonitor, blockTime, txHash, optionBlockHash)
-			if err != nil {
-				return err
-			}
-
-			pubKey, err := signer.PublicKey()
-			if err != nil {
-				return err
-			}
-
-			swarmAddress, err := crypto.NewOverlayAddress(*pubKey, networkID, blockHash)
-
-			err = node.CheckOverlayWithStore(swarmAddress, stateStore)
 
 			return err
 		},

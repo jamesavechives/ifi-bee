@@ -15,7 +15,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethersphere/bee/pkg/crypto"
 	"github.com/ethersphere/bee/pkg/swarm"
 
@@ -28,21 +27,18 @@ var ErrInvalidAddress = errors.New("invalid address")
 // It consists of a peers underlay (physical) address, overlay (topology) address and signature.
 // Signature is used to verify the `Overlay/Underlay` pair, as it is based on `underlay|networkID`, signed with the public key of Overlay address
 type Address struct {
-	Underlay        ma.Multiaddr
-	Overlay         swarm.Address
-	Signature       []byte
-	Transaction     []byte
-	EthereumAddress []byte
+	Underlay  ma.Multiaddr
+	Overlay   swarm.Address
+	Signature []byte
 }
 
 type addressJSON struct {
-	Overlay     string `json:"overlay"`
-	Underlay    string `json:"underlay"`
-	Signature   string `json:"signature"`
-	Transaction string `json:"transaction"`
+	Overlay   string `json:"overlay"`
+	Underlay  string `json:"underlay"`
+	Signature string `json:"signature"`
 }
 
-func NewAddress(signer crypto.Signer, underlay ma.Multiaddr, overlay swarm.Address, networkID uint64, trx []byte) (*Address, error) {
+func NewAddress(signer crypto.Signer, underlay ma.Multiaddr, overlay swarm.Address, networkID uint64) (*Address, error) {
 	underlayBinary, err := underlay.MarshalBinary()
 	if err != nil {
 		return nil, err
@@ -54,20 +50,19 @@ func NewAddress(signer crypto.Signer, underlay ma.Multiaddr, overlay swarm.Addre
 	}
 
 	return &Address{
-		Underlay:    underlay,
-		Overlay:     overlay,
-		Signature:   signature,
-		Transaction: trx,
+		Underlay:  underlay,
+		Overlay:   overlay,
+		Signature: signature,
 	}, nil
 }
 
-func ParseAddress(underlay, overlay, signature, trxHash, blockHash []byte, networkID uint64) (*Address, error) {
+func ParseAddress(underlay, overlay, signature []byte, networkID uint64) (*Address, error) {
 	recoveredPK, err := crypto.Recover(signature, generateSignData(underlay, overlay, networkID))
 	if err != nil {
 		return nil, ErrInvalidAddress
 	}
 
-	recoveredOverlay, err := crypto.NewOverlayAddress(*recoveredPK, networkID, blockHash)
+	recoveredOverlay, err := crypto.NewOverlayAddress(*recoveredPK, networkID)
 	if err != nil {
 		return nil, ErrInvalidAddress
 	}
@@ -80,17 +75,10 @@ func ParseAddress(underlay, overlay, signature, trxHash, blockHash []byte, netwo
 		return nil, ErrInvalidAddress
 	}
 
-	ethAddress, err := crypto.NewEthereumAddress(*recoveredPK)
-	if err != nil {
-		return nil, fmt.Errorf("extract ethereum address: %v: %w", err, ErrInvalidAddress)
-	}
-
 	return &Address{
-		Underlay:        multiUnderlay,
-		Overlay:         swarm.NewAddress(overlay),
-		Signature:       signature,
-		Transaction:     trxHash,
-		EthereumAddress: ethAddress,
+		Underlay:  multiUnderlay,
+		Overlay:   swarm.NewAddress(overlay),
+		Signature: signature,
 	}, nil
 }
 
@@ -103,15 +91,14 @@ func generateSignData(underlay, overlay []byte, networkID uint64) []byte {
 }
 
 func (a *Address) Equal(b *Address) bool {
-	return a.Overlay.Equal(b.Overlay) && a.Underlay.Equal(b.Underlay) && bytes.Equal(a.Signature, b.Signature) && bytes.Equal(a.Transaction, b.Transaction)
+	return a.Overlay.Equal(b.Overlay) && a.Underlay.Equal(b.Underlay) && bytes.Equal(a.Signature, b.Signature)
 }
 
 func (a *Address) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&addressJSON{
-		Overlay:     a.Overlay.String(),
-		Underlay:    a.Underlay.String(),
-		Signature:   base64.StdEncoding.EncodeToString(a.Signature),
-		Transaction: common.Bytes2Hex(a.Transaction),
+		Overlay:   a.Overlay.String(),
+		Underlay:  a.Underlay.String(),
+		Signature: base64.StdEncoding.EncodeToString(a.Signature),
 	})
 }
 
@@ -136,12 +123,11 @@ func (a *Address) UnmarshalJSON(b []byte) error {
 
 	a.Underlay = m
 	a.Signature, err = base64.StdEncoding.DecodeString(v.Signature)
-	a.Transaction = common.Hex2Bytes(v.Transaction)
 	return err
 }
 
 func (a *Address) String() string {
-	return fmt.Sprintf("[Underlay: %v, Overlay %v, Signature %x, Transaction %x]", a.Underlay, a.Overlay, a.Signature, a.Transaction)
+	return fmt.Sprintf("[Underlay: %v, Overlay %v, Signature %x]", a.Underlay, a.Overlay, a.Signature)
 }
 
 // ShortString returns shortened versions of bzz address in a format: [Overlay, Underlay]

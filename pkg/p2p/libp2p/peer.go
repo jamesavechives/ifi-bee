@@ -20,7 +20,6 @@ import (
 type peerRegistry struct {
 	underlays   map[string]libp2ppeer.ID                    // map overlay address to underlay peer id
 	overlays    map[libp2ppeer.ID]swarm.Address             // map underlay peer id to overlay address
-	full        map[libp2ppeer.ID]bool                      // map to track whether a node is full or light node (true=full)
 	connections map[libp2ppeer.ID]map[network.Conn]struct{} // list of connections for safe removal on Disconnect notification
 	streams     map[libp2ppeer.ID]map[network.Stream]context.CancelFunc
 	mu          sync.RWMutex
@@ -38,7 +37,6 @@ func newPeerRegistry() *peerRegistry {
 	return &peerRegistry{
 		underlays:   make(map[string]libp2ppeer.ID),
 		overlays:    make(map[libp2ppeer.ID]swarm.Address),
-		full:        make(map[libp2ppeer.ID]bool),
 		connections: make(map[libp2ppeer.ID]map[network.Conn]struct{}),
 		streams:     make(map[libp2ppeer.ID]map[network.Stream]context.CancelFunc),
 
@@ -80,7 +78,6 @@ func (r *peerRegistry) Disconnected(_ network.Network, c network.Conn) {
 		cancel()
 	}
 	delete(r.streams, peerID)
-	delete(r.full, peerID)
 	r.mu.Unlock()
 	r.disconnecter.disconnected(overlay)
 
@@ -118,10 +115,9 @@ func (r *peerRegistry) removeStream(peerID libp2ppeer.ID, stream network.Stream)
 func (r *peerRegistry) peers() []p2p.Peer {
 	r.mu.RLock()
 	peers := make([]p2p.Peer, 0, len(r.overlays))
-	for p, a := range r.overlays {
+	for _, a := range r.overlays {
 		peers = append(peers, p2p.Peer{
-			Address:  a,
-			FullNode: r.full[p],
+			Address: a,
 		})
 	}
 	r.mu.RUnlock()
@@ -131,7 +127,7 @@ func (r *peerRegistry) peers() []p2p.Peer {
 	return peers
 }
 
-func (r *peerRegistry) addIfNotExists(c network.Conn, overlay swarm.Address, full bool) (exists bool) {
+func (r *peerRegistry) addIfNotExists(c network.Conn, overlay swarm.Address) (exists bool) {
 	peerID := c.RemotePeer()
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -150,7 +146,6 @@ func (r *peerRegistry) addIfNotExists(c network.Conn, overlay swarm.Address, ful
 	r.streams[peerID] = make(map[network.Stream]context.CancelFunc)
 	r.underlays[overlay.ByteString()] = peerID
 	r.overlays[peerID] = overlay
-	r.full[peerID] = full
 	return false
 
 }
@@ -167,13 +162,6 @@ func (r *peerRegistry) overlay(peerID libp2ppeer.ID) (swarm.Address, bool) {
 	overlay, found := r.overlays[peerID]
 	r.mu.RUnlock()
 	return overlay, found
-}
-
-func (r *peerRegistry) fullnode(peerID libp2ppeer.ID) (bool, bool) {
-	r.mu.RLock()
-	full, found := r.full[peerID]
-	r.mu.RUnlock()
-	return full, found
 }
 
 func (r *peerRegistry) isConnected(peerID libp2ppeer.ID, remoteAddr ma.Multiaddr) (swarm.Address, bool) {
@@ -205,9 +193,9 @@ func (r *peerRegistry) isConnected(peerID libp2ppeer.ID, remoteAddr ma.Multiaddr
 	return swarm.ZeroAddress, false
 }
 
-func (r *peerRegistry) remove(overlay swarm.Address) (found, full bool, peerID libp2ppeer.ID) {
+func (r *peerRegistry) remove(overlay swarm.Address) (bool, libp2ppeer.ID) {
 	r.mu.Lock()
-	peerID, found = r.underlays[overlay.ByteString()]
+	peerID, found := r.underlays[overlay.ByteString()]
 	delete(r.overlays, peerID)
 	delete(r.underlays, overlay.ByteString())
 	delete(r.connections, peerID)
@@ -215,11 +203,9 @@ func (r *peerRegistry) remove(overlay swarm.Address) (found, full bool, peerID l
 		cancel()
 	}
 	delete(r.streams, peerID)
-	full = r.full[peerID]
-	delete(r.full, peerID)
 	r.mu.Unlock()
 
-	return found, full, peerID
+	return found, peerID
 }
 
 func (r *peerRegistry) setDisconnecter(d disconnecter) {

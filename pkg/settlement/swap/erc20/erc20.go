@@ -11,13 +11,12 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethersphere/bee/pkg/sctx"
-	"github.com/ethersphere/bee/pkg/transaction"
-	"github.com/ethersphere/go-sw3-abi/sw3abi"
+	"github.com/ethersphere/bee/pkg/settlement/swap/transaction"
+	"github.com/ethersphere/sw3-bindings/v3/simpleswapfactory"
 )
 
 var (
-	erc20ABI     = transaction.ParseABIUnchecked(sw3abi.ERC20ABIv0_3_1)
+	erc20ABI     = transaction.ParseABIUnchecked(simpleswapfactory.ERC20ABI)
 	errDecodeABI = errors.New("could not decode abi data")
 )
 
@@ -77,12 +76,11 @@ func (c *erc20Service) Transfer(ctx context.Context, address common.Address, val
 	}
 
 	request := &transaction.TxRequest{
-		To:          &c.address,
-		Data:        callData,
-		GasPrice:    sctx.GetGasPrice(ctx),
-		GasLimit:    90000,
-		Value:       big.NewInt(0),
-		Description: "token transfer",
+		To:       &c.address,
+		Data:     callData,
+		GasPrice: nil,
+		GasLimit: 0,
+		Value:    big.NewInt(0),
 	}
 
 	txHash, err := c.transactionService.Send(ctx, request)

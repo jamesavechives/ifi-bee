@@ -14,11 +14,11 @@ import (
 const welcomeMessageMaxRequestSize = 512
 
 type welcomeMessageRequest struct {
-	WelcomeMesssage string `json:"welcomeMessage"`
+	WelcomeMesssage string `json:"welcome_message"`
 }
 
 type welcomeMessageResponse struct {
-	WelcomeMesssage string `json:"welcomeMessage"`
+	WelcomeMesssage string `json:"welcome_message"`
 }
 
 func (s *Service) getWelcomeMessageHandler(w http.ResponseWriter, r *http.Request) {

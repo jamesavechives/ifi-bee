@@ -11,7 +11,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io/ioutil"
-	"math/big"
 	"net/http"
 	"net/url"
 	"sync"
@@ -19,13 +18,10 @@ import (
 	"time"
 
 	"github.com/btcsuite/btcd/btcec"
-	"github.com/ethersphere/bee/pkg/api"
 	"github.com/ethersphere/bee/pkg/crypto"
 	"github.com/ethersphere/bee/pkg/jsonhttp"
 	"github.com/ethersphere/bee/pkg/jsonhttp/jsonhttptest"
 	"github.com/ethersphere/bee/pkg/logging"
-	"github.com/ethersphere/bee/pkg/postage"
-	mockpost "github.com/ethersphere/bee/pkg/postage/mock"
 	"github.com/ethersphere/bee/pkg/pss"
 	"github.com/ethersphere/bee/pkg/pushsync"
 	"github.com/ethersphere/bee/pkg/storage/mock"
@@ -34,17 +30,11 @@ import (
 )
 
 var (
-	target  = pss.Target([]byte{1})
-	targets = pss.Targets([]pss.Target{target})
-	payload = []byte("testdata")
-	topic   = pss.NewTopic("testtopic")
-	// mTimeout is used to wait for checking the message contents, whereas rTimeout
-	// is used to wait for reading the message. For the negative cases, i.e. ensuring
-	// no message is received, the rTimeout might trigger before the mTimeout
-	// (Issue #1388) causing test to fail. Hence the rTimeout should be slightly more
-	// than the mTimeout
-	mTimeout    = 10 * time.Second
-	rTimeout    = 15 * time.Second
+	target      = pss.Target([]byte{1})
+	targets     = pss.Targets([]pss.Target{target})
+	payload     = []byte("testdata")
+	topic       = pss.NewTopic("testtopic")
+	timeout     = 10 * time.Second
 	longTimeout = 30 * time.Second
 )
 
@@ -186,13 +176,12 @@ func TestPssSend(t *testing.T) {
 			mtx.Unlock()
 			return err
 		}
-		mp           = mockpost.New(mockpost.WithIssuer(postage.NewStampIssuer("", "", batchOk, big.NewInt(3), 11, 10, 1000, true)))
+
 		p            = newMockPss(sendFn)
 		client, _, _ = newTestServer(t, testServerOptions{
 			Pss:    p,
 			Storer: mock.NewStorer(),
 			Logger: logger,
-			Post:   mp,
 		})
 
 		recipient = hex.EncodeToString(publicKeyBytes)
@@ -216,40 +205,12 @@ func TestPssSend(t *testing.T) {
 		)
 	})
 
-	t.Run("err - bad batch", func(t *testing.T) {
-		hexbatch := hex.EncodeToString(batchInvalid)
-		jsonhttptest.Request(t, client, http.MethodPost, "/pss/send/to/12", http.StatusBadRequest,
-			jsonhttptest.WithRequestHeader(api.SwarmPostageBatchIdHeader, hexbatch),
-			jsonhttptest.WithRequestBody(bytes.NewReader(payload)),
-			jsonhttptest.WithExpectedJSONResponse(jsonhttp.StatusResponse{
-				Message: "invalid postage batch id",
-				Code:    http.StatusBadRequest,
-			}),
-		)
-	})
-
-	t.Run("ok batch", func(t *testing.T) {
-		hexbatch := hex.EncodeToString(batchOk)
-		jsonhttptest.Request(t, client, http.MethodPost, "/pss/send/to/12", http.StatusCreated,
-			jsonhttptest.WithRequestHeader(api.SwarmPostageBatchIdHeader, hexbatch),
-			jsonhttptest.WithRequestBody(bytes.NewReader(payload)),
-		)
-	})
-	t.Run("bad request - batch empty", func(t *testing.T) {
-		hexbatch := hex.EncodeToString(batchEmpty)
-		jsonhttptest.Request(t, client, http.MethodPost, "/pss/send/to/12", http.StatusBadRequest,
-			jsonhttptest.WithRequestHeader(api.SwarmPostageBatchIdHeader, hexbatch),
-			jsonhttptest.WithRequestBody(bytes.NewReader(payload)),
-		)
-	})
-
 	t.Run("ok", func(t *testing.T) {
-		jsonhttptest.Request(t, client, http.MethodPost, "/pss/send/testtopic/12?recipient="+recipient, http.StatusCreated,
-			jsonhttptest.WithRequestHeader(api.SwarmPostageBatchIdHeader, batchOkStr),
+		jsonhttptest.Request(t, client, http.MethodPost, "/pss/send/testtopic/12?recipient="+recipient, http.StatusOK,
 			jsonhttptest.WithRequestBody(bytes.NewReader(payload)),
 			jsonhttptest.WithExpectedJSONResponse(jsonhttp.StatusResponse{
-				Message: "Created",
-				Code:    http.StatusCreated,
+				Message: "OK",
+				Code:    http.StatusOK,
 			}),
 		)
 		waitDone(t, &mtx, &done)
@@ -265,12 +226,11 @@ func TestPssSend(t *testing.T) {
 	})
 
 	t.Run("without recipient", func(t *testing.T) {
-		jsonhttptest.Request(t, client, http.MethodPost, "/pss/send/testtopic/12", http.StatusCreated,
-			jsonhttptest.WithRequestHeader(api.SwarmPostageBatchIdHeader, batchOkStr),
+		jsonhttptest.Request(t, client, http.MethodPost, "/pss/send/testtopic/12", http.StatusOK,
 			jsonhttptest.WithRequestBody(bytes.NewReader(payload)),
 			jsonhttptest.WithExpectedJSONResponse(jsonhttp.StatusResponse{
-				Message: "Created",
-				Code:    http.StatusCreated,
+				Message: "OK",
+				Code:    http.StatusOK,
 			}),
 		)
 		waitDone(t, &mtx, &done)
@@ -322,7 +282,7 @@ func TestPssPingPong(t *testing.T) {
 
 func waitReadMessage(t *testing.T, mtx *sync.Mutex, cl *websocket.Conn, targetContent []byte, done <-chan struct{}) {
 	t.Helper()
-	timeout := time.After(rTimeout)
+	timeout := time.After(timeout)
 	for {
 		select {
 		case <-done:
@@ -367,7 +327,7 @@ func waitDone(t *testing.T, mtx *sync.Mutex, done *bool) {
 func waitMessage(t *testing.T, data, expData []byte, mtx *sync.Mutex) {
 	t.Helper()
 
-	ttl := time.After(mTimeout)
+	ttl := time.After(timeout)
 	for {
 		select {
 		case <-ttl:
@@ -425,7 +385,7 @@ func newMockPss(f pssSendFn) *mpss {
 }
 
 // Send arbitrary byte slice with the given topic to Targets.
-func (m *mpss) Send(ctx context.Context, topic pss.Topic, payload []byte, _ postage.Stamper, recipient *ecdsa.PublicKey, targets pss.Targets) error {
+func (m *mpss) Send(ctx context.Context, topic pss.Topic, payload []byte, recipient *ecdsa.PublicKey, targets pss.Targets) error {
 	chunk, err := pss.Wrap(ctx, topic, payload, recipient, targets)
 	if err != nil {
 		return err

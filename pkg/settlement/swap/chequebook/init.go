@@ -6,7 +6,6 @@ package chequebook
 
 import (
 	"context"
-	"crypto/rand"
 	"fmt"
 	"math/big"
 	"time"
@@ -14,13 +13,13 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethersphere/bee/pkg/logging"
 	"github.com/ethersphere/bee/pkg/settlement/swap/erc20"
+	"github.com/ethersphere/bee/pkg/settlement/swap/transaction"
 	"github.com/ethersphere/bee/pkg/storage"
-	"github.com/ethersphere/bee/pkg/transaction"
 )
 
 const (
 	chequebookKey           = "swap_chequebook"
-	ChequebookDeploymentKey = "swap_chequebook_transaction_deployment"
+	chequebookDeploymentKey = "swap_chequebook_transaction_deployment"
 
 	balanceCheckBackoffDuration = 20 * time.Second
 	balanceCheckMaxRetries      = 10
@@ -53,7 +52,7 @@ func checkBalance(
 			return err
 		}
 
-		minimumEth := gasPrice.Mul(gasPrice, big.NewInt(250000))
+		minimumEth := gasPrice.Mul(gasPrice, big.NewInt(2000000))
 
 		insufficientERC20 := erc20Balance.Cmp(swapInitialDeposit) < 0
 		insufficientETH := ethBalance.Cmp(minimumEth) < 0
@@ -73,7 +72,7 @@ func checkBalance(
 				logger.Warningf("cannot continue until there is at least %d BZZ available on %x", neededERC20, overlayEthAddress)
 			}
 			if chainId == 5 {
-				logger.Warningf("learn how to fund your node by visiting our docs at https://docs.ethswarm.org/docs/installation/fund-your-node")
+				logger.Warningf("get your Goerli ETH and Goerli BZZ now via the bzzaar at https://bzz.ethswarm.org/?transaction=buy&amount=%d&slippage=30&receiver=0x%x", neededERC20, overlayEthAddress)
 			}
 			select {
 			case <-time.After(balanceCheckBackoffDuration):
@@ -103,6 +102,7 @@ func Init(
 	chainId int64,
 	overlayEthAddress common.Address,
 	chequeSigner ChequeSigner,
+	simpleSwapBindingFunc SimpleSwapBindingFunc,
 ) (chequebookService Service, err error) {
 	// verify that the supplied factory is valid
 	err = chequebookFactory.VerifyBytecode(ctx)
@@ -125,7 +125,7 @@ func Init(
 		}
 
 		var txHash common.Hash
-		err = stateStore.Get(ChequebookDeploymentKey, &txHash)
+		err = stateStore.Get(chequebookDeploymentKey, &txHash)
 		if err != nil && err != storage.ErrNotFound {
 			return nil, err
 		}
@@ -138,21 +138,15 @@ func Init(
 				}
 			}
 
-			nonce := make([]byte, 32)
-			_, err = rand.Read(nonce)
-			if err != nil {
-				return nil, err
-			}
-
 			// if we don't yet have a chequebook, deploy a new one
-			txHash, err = chequebookFactory.Deploy(ctx, overlayEthAddress, big.NewInt(0), common.BytesToHash(nonce))
+			txHash, err = chequebookFactory.Deploy(ctx, overlayEthAddress, big.NewInt(0))
 			if err != nil {
 				return nil, err
 			}
 
 			logger.Infof("deploying new chequebook in transaction %x", txHash)
 
-			err = stateStore.Put(ChequebookDeploymentKey, txHash)
+			err = stateStore.Put(chequebookDeploymentKey, txHash)
 			if err != nil {
 				return nil, err
 			}
@@ -173,7 +167,7 @@ func Init(
 			return nil, err
 		}
 
-		chequebookService, err = New(transactionService, chequebookAddress, overlayEthAddress, stateStore, chequeSigner, erc20Service)
+		chequebookService, err = New(swapBackend, transactionService, chequebookAddress, overlayEthAddress, stateStore, chequeSigner, erc20Service, simpleSwapBindingFunc)
 		if err != nil {
 			return nil, err
 		}
@@ -194,7 +188,7 @@ func Init(
 			logger.Info("successfully deposited to chequebook")
 		}
 	} else {
-		chequebookService, err = New(transactionService, chequebookAddress, overlayEthAddress, stateStore, chequeSigner, erc20Service)
+		chequebookService, err = New(swapBackend, transactionService, chequebookAddress, overlayEthAddress, stateStore, chequeSigner, erc20Service, simpleSwapBindingFunc)
 		if err != nil {
 			return nil, err
 		}

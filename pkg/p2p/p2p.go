@@ -26,7 +26,6 @@ type Service interface {
 	BlocklistedPeers() ([]Peer, error)
 	Addresses() ([]ma.Multiaddr, error)
 	SetPickyNotifier(PickyNotifier)
-	Halter
 }
 
 type Disconnecter interface {
@@ -34,11 +33,6 @@ type Disconnecter interface {
 	// Blocklist will disconnect a peer and put it on a blocklist (blocking in & out connections) for provided duration
 	// duration 0 is treated as an infinite duration
 	Blocklist(overlay swarm.Address, duration time.Duration) error
-}
-
-type Halter interface {
-	// Halt new incoming connections while shutting down
-	Halt()
 }
 
 // PickyNotifer can decide whether a peer should be picked
@@ -50,7 +44,6 @@ type PickyNotifier interface {
 type Notifier interface {
 	Connected(context.Context, Peer) error
 	Disconnected(Peer)
-	Announce(context.Context, swarm.Address, bool) error
 }
 
 // DebugService extends the Service with method used for debugging.
@@ -74,7 +67,6 @@ type StreamerDisconnecter interface {
 type Stream interface {
 	io.ReadWriter
 	io.Closer
-	ResponseHeaders() Headers
 	Headers() Headers
 	FullClose() error
 	Reset() error
@@ -100,9 +92,7 @@ type StreamSpec struct {
 
 // Peer holds information about a Peer.
 type Peer struct {
-	Address         swarm.Address
-	FullNode        bool
-	EthereumAddress []byte
+	Address swarm.Address `json:"address"`
 }
 
 // HandlerFunc handles a received Stream from a Peer.
@@ -113,7 +103,7 @@ type HandlerMiddleware func(HandlerFunc) HandlerFunc
 
 // HeadlerFunc is returning response headers based on the received request
 // headers.
-type HeadlerFunc func(Headers, swarm.Address) Headers
+type HeadlerFunc func(Headers) Headers
 
 // Headers represents a collection of p2p header key value pairs.
 type Headers map[string][]byte

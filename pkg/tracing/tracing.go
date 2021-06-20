@@ -186,7 +186,11 @@ func (t *Tracer) AddContextHTTPHeader(ctx context.Context, headers http.Header) 
 	}
 
 	carrier := opentracing.HTTPHeadersCarrier(headers)
-	return t.tracer.Inject(c, opentracing.HTTPHeaders, carrier)
+	if err := t.tracer.Inject(c, opentracing.HTTPHeaders, carrier); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // FromHTTPHeaders returns tracing span context from HTTP headers. If the tracing

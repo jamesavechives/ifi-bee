@@ -53,7 +53,7 @@ func TestModeGetMulti(t *testing.T) {
 					if err != nil {
 						t.Fatal(err)
 					}
-					chunks[i] = ch
+					chunks[i] = ch.WithPinCounter(1)
 				}
 			}
 

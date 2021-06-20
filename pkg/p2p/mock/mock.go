@@ -166,8 +166,6 @@ func (s *Service) GetWelcomeMessage() string {
 	return s.welcomeMessage
 }
 
-func (s *Service) Halt() {}
-
 func (s *Service) Blocklist(overlay swarm.Address, duration time.Duration) error {
 	if s.blocklistFunc == nil {
 		return errors.New("function blocklist not configured")

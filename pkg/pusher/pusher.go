@@ -10,14 +10,11 @@ package pusher
 
 import (
 	"context"
-	"crypto/ecdsa"
 	"errors"
 	"fmt"
-	"strconv"
 	"sync"
 	"time"
 
-	"github.com/ethersphere/bee/pkg/crypto"
 	"github.com/ethersphere/bee/pkg/logging"
 	"github.com/ethersphere/bee/pkg/pushsync"
 	"github.com/ethersphere/bee/pkg/storage"
@@ -26,15 +23,12 @@ import (
 	"github.com/ethersphere/bee/pkg/topology"
 	"github.com/ethersphere/bee/pkg/tracing"
 	"github.com/opentracing/opentracing-go"
-
 	"github.com/sirupsen/logrus"
 )
 
 type Service struct {
-	networkID         uint64
 	storer            storage.Storer
 	pushSyncer        pushsync.PushSyncer
-	depther           topology.NeighborhoodDepther
 	logger            logging.Logger
 	tag               *tags.Tags
 	tracer            *tracing.Tracer
@@ -46,20 +40,12 @@ type Service struct {
 var (
 	retryInterval  = 5 * time.Second // time interval between retries
 	concurrentJobs = 10              // how many chunks to push simultaneously
-	retryCount     = 6
 )
 
-var (
-	ErrInvalidAddress = errors.New("invalid address")
-	ErrShallowReceipt = errors.New("shallow recipt")
-)
-
-func New(networkID uint64, storer storage.Storer, depther topology.NeighborhoodDepther, pushSyncer pushsync.PushSyncer, tagger *tags.Tags, logger logging.Logger, tracer *tracing.Tracer, warmupTime time.Duration) *Service {
+func New(storer storage.Storer, peerSuggester topology.ClosestPeerer, pushSyncer pushsync.PushSyncer, tagger *tags.Tags, logger logging.Logger, tracer *tracing.Tracer) *Service {
 	service := &Service{
-		networkID:         networkID,
 		storer:            storer,
 		pushSyncer:        pushSyncer,
-		depther:           depther,
 		tag:               tagger,
 		logger:            logger,
 		tracer:            tracer,
@@ -67,13 +53,13 @@ func New(networkID uint64, storer storage.Storer, depther topology.NeighborhoodD
 		quit:              make(chan struct{}),
 		chunksWorkerQuitC: make(chan struct{}),
 	}
-	go service.chunksWorker(warmupTime)
+	go service.chunksWorker()
 	return service
 }
 
 // chunksWorker is a loop that keeps looking for chunks that are locally uploaded ( by monitoring pushIndex )
 // and pushes them to the closest peer and get a receipt.
-func (s *Service) chunksWorker(warmupTime time.Duration) {
+func (s *Service) chunksWorker() {
 	var (
 		chunks        <-chan swarm.Chunk
 		unsubscribe   func()
@@ -86,24 +72,13 @@ func (s *Service) chunksWorker(warmupTime time.Duration) {
 		mtx           sync.Mutex
 		span          opentracing.Span
 		logger        *logrus.Entry
-		retryCounter  = make(map[string]int)
 	)
-
 	defer timer.Stop()
 	defer close(s.chunksWorkerQuitC)
 	go func() {
 		<-s.quit
 		cancel()
 	}()
-
-	// wait for warmup duration to complete
-	select {
-	case <-time.After(warmupTime):
-	case <-s.quit:
-		return
-	}
-
-	s.logger.Info("pusher: warmup period complete, worker starting.")
 
 LOOP:
 	for {
@@ -122,9 +97,7 @@ LOOP:
 			}
 
 			if span == nil {
-				mtx.Lock()
 				span, logger, ctx = s.tracer.StartSpanFromContext(cctx, "pusher-sync-batch", s.logger)
-				mtx.Unlock()
 			}
 
 			// postpone a retry only after we've finished processing everything in index
@@ -156,103 +129,60 @@ LOOP:
 
 			go func(ctx context.Context, ch swarm.Chunk) {
 				var (
-					err        error
-					startTime  = time.Now()
-					t          *tags.Tag
-					wantSelf   bool
-					storerPeer swarm.Address
+					err       error
+					startTime = time.Now()
+					t         *tags.Tag
+					setSent   bool
 				)
 				defer func() {
-					mtx.Lock()
 					if err == nil {
 						s.metrics.TotalSynced.Inc()
 						s.metrics.SyncTime.Observe(time.Since(startTime).Seconds())
 						// only print this if there was no error while sending the chunk
-						po := swarm.Proximity(ch.Address().Bytes(), storerPeer.Bytes())
-						logger.Tracef("pusher: pushed chunk %s to node %s, receipt depth %d", ch.Address().String(), storerPeer.String(), po)
-						s.metrics.ReceiptDepth.WithLabelValues(strconv.Itoa(int(po))).Inc()
-						delete(retryCounter, ch.Address().ByteString())
+						logger.Tracef("pusher pushed chunk %s", ch.Address().String())
 					} else {
 						s.metrics.TotalErrors.Inc()
 						s.metrics.ErrorTime.Observe(time.Since(startTime).Seconds())
-						logger.Tracef("pusher: cannot push chunk %s: %v", ch.Address().String(), err)
 					}
+					mtx.Lock()
 					delete(inflight, ch.Address().String())
 					mtx.Unlock()
 					<-sem
 				}()
-
 				// Later when we process receipt, get the receipt and process it
 				// for now ignoring the receipt and checking only for error
-				receipt, err := s.pushSyncer.PushChunkToClosest(ctx, ch)
+				_, err = s.pushSyncer.PushChunkToClosest(ctx, ch)
 				if err != nil {
 					if errors.Is(err, topology.ErrWantSelf) {
 						// we are the closest ones - this is fine
 						// this is to make sure that the sent number does not diverge from the synced counter
 						// the edge case is on the uploader node, in the case where the uploader node is
 						// connected to other nodes, but is the closest one to the chunk.
-						wantSelf = true
+						setSent = true
 					} else {
 						return
 					}
 				}
-
-				if receipt != nil {
-					var publicKey *ecdsa.PublicKey
-					publicKey, err = crypto.Recover(receipt.Signature, receipt.Address.Bytes())
-					if err != nil {
-						err = fmt.Errorf("pusher: receipt recover: %w", err)
-						return
-					}
-
-					storerPeer, err = crypto.NewOverlayAddress(*publicKey, s.networkID, receipt.BlockHash)
-					if err != nil {
-						err = fmt.Errorf("pusher: receipt storer address: %w", err)
-						return
-					}
-
-					po := swarm.Proximity(ch.Address().Bytes(), storerPeer.Bytes())
-					d := s.depther.NeighborhoodDepth()
-					if po < d {
-						mtx.Lock()
-						retryCounter[ch.Address().ByteString()]++
-						if retryCounter[ch.Address().ByteString()] < retryCount {
-							mtx.Unlock()
-							err = fmt.Errorf("pusher: shallow receipt depth %d, want at least %d", po, d)
-							s.metrics.ShallowReceiptDepth.WithLabelValues(strconv.Itoa(int(po))).Inc()
-							return
-						}
-						mtx.Unlock()
-					} else {
-						s.metrics.ReceiptDepth.WithLabelValues(strconv.Itoa(int(po))).Inc()
-					}
-				}
-
 				if err = s.storer.Set(ctx, storage.ModeSetSync, ch.Address()); err != nil {
 					err = fmt.Errorf("pusher: set sync: %w", err)
 					return
 				}
-				if ch.TagID() > 0 {
-					// for individual chunks uploaded using the
-					// /chunks api endpoint the tag will be missing
-					// by default, unless the api consumer specifies one
-					t, err = s.tag.Get(ch.TagID())
-					if err == nil && t != nil {
-						err = t.Inc(tags.StateSynced)
+
+				t, err = s.tag.Get(ch.TagID())
+				if err == nil && t != nil {
+					err = t.Inc(tags.StateSynced)
+					if err != nil {
+						err = fmt.Errorf("pusher: increment synced: %v", err)
+						return
+					}
+					if setSent {
+						err = t.Inc(tags.StateSent)
 						if err != nil {
-							err = fmt.Errorf("pusher: increment synced: %v", err)
+							err = fmt.Errorf("pusher: increment sent: %w", err)
 							return
-						}
-						if wantSelf {
-							err = t.Inc(tags.StateSent)
-							if err != nil {
-								err = fmt.Errorf("pusher: increment sent: %w", err)
-								return
-							}
 						}
 					}
 				}
-
 			}(ctx, ch)
 		case <-timer.C:
 			// initially timer is set to go off as well as every time we hit the end of push index

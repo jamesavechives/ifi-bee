@@ -21,11 +21,11 @@ import (
 	"errors"
 	"time"
 
-	"github.com/ethersphere/bee/pkg/postage"
+	"github.com/syndtr/goleveldb/leveldb"
+
 	"github.com/ethersphere/bee/pkg/shed"
 	"github.com/ethersphere/bee/pkg/storage"
 	"github.com/ethersphere/bee/pkg/swarm"
-	"github.com/syndtr/goleveldb/leveldb"
 )
 
 // Get returns a chunk from the database. If the chunk is
@@ -50,8 +50,7 @@ func (db *DB) Get(ctx context.Context, mode storage.ModeGet, addr swarm.Address)
 		}
 		return nil, err
 	}
-	return swarm.NewChunk(swarm.NewAddress(out.Address), out.Data).
-		WithStamp(postage.NewStamp(out.BatchID, out.Index, out.Timestamp, out.Sig)), nil
+	return swarm.NewChunk(swarm.NewAddress(out.Address), out.Data).WithPinCounter(out.PinCounter), nil
 }
 
 // get returns Item from the retrieval index
@@ -153,27 +152,24 @@ func (db *DB) updateGC(item shed.Item) (err error) {
 	if err != nil {
 		return err
 	}
-
-	// update the gc item timestamp in case
-	// it exists
-	_, err = db.gcIndex.Get(item)
+	// update access timestamp
 	item.AccessTimestamp = now()
-	if err == nil {
-		err = db.gcIndex.PutInBatch(batch, item)
-		if err != nil {
-			return err
-		}
-	} else if !errors.Is(err, leveldb.ErrNotFound) {
-		return err
-	}
-	// if the item is not in the gc we don't
-	// update the gc index, since the item is
-	// in the reserve.
-
 	// update retrieve access index
 	err = db.retrievalAccessIndex.PutInBatch(batch, item)
 	if err != nil {
 		return err
+	}
+
+	// add new entry to gc index ONLY if it is not present in pinIndex
+	ok, err := db.pinIndex.Has(item)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		err = db.gcIndex.PutInBatch(batch, item)
+		if err != nil {
+			return err
+		}
 	}
 
 	return db.shed.WriteBatch(batch)

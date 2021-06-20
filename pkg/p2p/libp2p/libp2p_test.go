@@ -13,7 +13,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethersphere/bee/pkg/addressbook"
 	"github.com/ethersphere/bee/pkg/crypto"
 	"github.com/ethersphere/bee/pkg/logging"
@@ -21,7 +20,6 @@ import (
 	"github.com/ethersphere/bee/pkg/p2p/libp2p"
 	"github.com/ethersphere/bee/pkg/statestore/mock"
 	"github.com/ethersphere/bee/pkg/swarm"
-	"github.com/ethersphere/bee/pkg/topology/lightnode"
 	"github.com/multiformats/go-multiaddr"
 )
 
@@ -29,9 +27,7 @@ type libp2pServiceOpts struct {
 	Logger      logging.Logger
 	Addressbook addressbook.Interface
 	PrivateKey  *ecdsa.PrivateKey
-	MockPeerKey *ecdsa.PrivateKey
 	libp2pOpts  libp2p.Options
-	lightNodes  *lightnode.Container
 }
 
 // newService constructs a new libp2p service.
@@ -43,10 +39,7 @@ func newService(t *testing.T, networkID uint64, o libp2pServiceOpts) (s *libp2p.
 		t.Fatal(err)
 	}
 
-	trx := common.HexToHash("0x1").Bytes()
-	blockHash := common.HexToHash("0x2").Bytes()
-
-	overlay, err = crypto.NewOverlayAddress(swarmKey.PublicKey, networkID, blockHash)
+	overlay, err = crypto.NewOverlayAddress(swarmKey.PublicKey, networkID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -72,18 +65,7 @@ func newService(t *testing.T, networkID uint64, o libp2pServiceOpts) (s *libp2p.
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-
-	if o.lightNodes == nil {
-		o.lightNodes = lightnode.NewContainer(overlay)
-	}
-	opts := o.libp2pOpts
-	opts.Transaction = trx
-
-	senderMatcher := &MockSenderMatcher{
-		BlockHash: blockHash,
-	}
-
-	s, err = libp2p.New(ctx, crypto.NewDefaultSigner(swarmKey), networkID, overlay, addr, o.Addressbook, statestore, o.lightNodes, senderMatcher, o.Logger, nil, opts)
+	s, err = libp2p.New(ctx, crypto.NewDefaultSigner(swarmKey), networkID, overlay, addr, o.Addressbook, statestore, o.Logger, nil, o.libp2pOpts)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -163,12 +145,4 @@ func serviceUnderlayAddress(t *testing.T, s *libp2p.Service) multiaddr.Multiaddr
 		t.Fatal(err)
 	}
 	return addrs[0]
-}
-
-type MockSenderMatcher struct {
-	BlockHash []byte
-}
-
-func (m MockSenderMatcher) Matches(context.Context, []byte, uint64, swarm.Address) ([]byte, error) {
-	return m.BlockHash, nil
 }

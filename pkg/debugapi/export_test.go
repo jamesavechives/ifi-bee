@@ -25,24 +25,15 @@ type (
 	SwapCashoutResponse               = swapCashoutResponse
 	SwapCashoutStatusResponse         = swapCashoutStatusResponse
 	SwapCashoutStatusResult           = swapCashoutStatusResult
-	TransactionInfo                   = transactionInfo
-	TransactionPendingList            = transactionPendingList
-	TransactionHashResponse           = transactionHashResponse
 	TagResponse                       = tagResponse
-	ReserveStateResponse              = reserveStateResponse
-	ChainStateResponse                = chainStateResponse
 )
 
 var (
-	ErrCantBalance           = errCantBalance
-	ErrCantBalances          = errCantBalances
-	ErrNoBalance             = errNoBalance
-	ErrCantSettlementsPeer   = errCantSettlementsPeer
-	ErrCantSettlements       = errCantSettlements
-	ErrChequebookBalance     = errChequebookBalance
-	ErrInvalidAddress        = errInvalidAddress
-	ErrUnknownTransaction    = errUnknownTransaction
-	ErrCantGetTransaction    = errCantGetTransaction
-	ErrCantResendTransaction = errCantResendTransaction
-	ErrAlreadyImported       = errAlreadyImported
+	ErrCantBalance         = errCantBalance
+	ErrCantBalances        = errCantBalances
+	ErrNoBalance           = errNoBalance
+	ErrCantSettlementsPeer = errCantSettlementsPeer
+	ErrCantSettlements     = errCantSettlements
+	ErrChequebookBalance   = errChequebookBalance
+	ErrInvalidAddress      = errInvalidAddress
 )

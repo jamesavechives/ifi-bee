@@ -60,14 +60,13 @@ type Interface interface {
 }
 
 type Syncer struct {
-	streamer   p2p.Streamer
-	metrics    metrics
-	logger     logging.Logger
-	storage    pullstorage.Storer
-	quit       chan struct{}
-	wg         sync.WaitGroup
-	unwrap     func(swarm.Chunk)
-	validStamp func(swarm.Chunk, []byte) (swarm.Chunk, error)
+	streamer p2p.Streamer
+	metrics  metrics
+	logger   logging.Logger
+	storage  pullstorage.Storer
+	quit     chan struct{}
+	wg       sync.WaitGroup
+	unwrap   func(swarm.Chunk)
 
 	ruidMtx sync.Mutex
 	ruidCtx map[uint32]func()
@@ -76,17 +75,16 @@ type Syncer struct {
 	io.Closer
 }
 
-func New(streamer p2p.Streamer, storage pullstorage.Storer, unwrap func(swarm.Chunk), validStamp func(swarm.Chunk, []byte) (swarm.Chunk, error), logger logging.Logger) *Syncer {
+func New(streamer p2p.Streamer, storage pullstorage.Storer, unwrap func(swarm.Chunk), logger logging.Logger) *Syncer {
 	return &Syncer{
-		streamer:   streamer,
-		storage:    storage,
-		metrics:    newMetrics(),
-		unwrap:     unwrap,
-		validStamp: validStamp,
-		logger:     logger,
-		ruidCtx:    make(map[uint32]func()),
-		wg:         sync.WaitGroup{},
-		quit:       make(chan struct{}),
+		streamer: streamer,
+		storage:  storage,
+		metrics:  newMetrics(),
+		unwrap:   unwrap,
+		logger:   logger,
+		ruidCtx:  make(map[uint32]func()),
+		wg:       sync.WaitGroup{},
+		quit:     make(chan struct{}),
 	}
 }
 
@@ -227,10 +225,6 @@ func (s *Syncer) SyncInterval(ctx context.Context, peer swarm.Address, bin uint8
 		s.metrics.DeliveryCounter.Inc()
 
 		chunk := swarm.NewChunk(addr, delivery.Data)
-		if chunk, err = s.validStamp(chunk, delivery.Stamp); err != nil {
-			return 0, ru.Ruid, err
-		}
-
 		if cac.Valid(chunk) {
 			go s.unwrap(chunk)
 		} else if !soc.Valid(chunk) {
@@ -260,7 +254,7 @@ func (s *Syncer) SyncInterval(ctx context.Context, peer swarm.Address, bin uint8
 
 // handler handles an incoming request to sync an interval
 func (s *Syncer) handler(ctx context.Context, p p2p.Peer, stream p2p.Stream) (err error) {
-	r := protobuf.NewReader(stream)
+	w, r := protobuf.NewWriterAndReader(stream)
 	defer func() {
 		if err != nil {
 			_ = stream.Reset()
@@ -311,11 +305,6 @@ func (s *Syncer) handler(ctx context.Context, p p2p.Peer, stream p2p.Stream) (er
 		return fmt.Errorf("make offer: %w", err)
 	}
 
-	// recreate the reader to allow the first one to be garbage collected
-	// before the makeOffer function call, to reduce the total memory allocated
-	// while makeOffer is executing (waiting for the new chunks)
-	w, r := protobuf.NewWriterAndReader(stream)
-
 	if err := w.WriteMsgWithContext(ctx, offer); err != nil {
 		return fmt.Errorf("write offer: %w", err)
 	}
@@ -337,11 +326,7 @@ func (s *Syncer) handler(ctx context.Context, p p2p.Peer, stream p2p.Stream) (er
 	}
 
 	for _, v := range chs {
-		stamp, err := v.Stamp().MarshalBinary()
-		if err != nil {
-			return fmt.Errorf("serialise stamp: %w", err)
-		}
-		deliver := pb.Delivery{Address: v.Address().Bytes(), Data: v.Data(), Stamp: stamp}
+		deliver := pb.Delivery{Address: v.Address().Bytes(), Data: v.Data()}
 		if err := w.WriteMsgWithContext(ctx, &deliver); err != nil {
 			return fmt.Errorf("write delivery: %w", err)
 		}
@@ -504,17 +489,9 @@ func (s *Syncer) Close() error {
 		defer close(cc)
 		s.wg.Wait()
 	}()
-
-	// cancel all contexts
-	s.ruidMtx.Lock()
-	for _, c := range s.ruidCtx {
-		c()
-	}
-	s.ruidMtx.Unlock()
-
 	select {
 	case <-cc:
-	case <-time.After(5 * time.Second):
+	case <-time.After(10 * time.Second):
 		s.logger.Warning("pull syncer shutting down with running goroutines")
 	}
 	return nil

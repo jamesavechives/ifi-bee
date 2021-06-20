@@ -7,7 +7,6 @@ package swarm
 
 import (
 	"bytes"
-	"encoding"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -24,7 +23,7 @@ const (
 	BmtBranches             = 128
 	ChunkSize               = SectionSize * Branches
 	HashSize                = 32
-	MaxPO             uint8 = 31
+	MaxPO             uint8 = 15
 	ExtendedPO        uint8 = MaxPO + 5
 	MaxBins                 = MaxPO + 1
 	ChunkWithSpanSize       = ChunkSize + SpanSize
@@ -126,51 +125,20 @@ var ZeroAddress = NewAddress(nil)
 type AddressIterFunc func(address Address) error
 
 type Chunk interface {
-	// Address returns the chunk address.
 	Address() Address
-	// Data returns the chunk data.
 	Data() []byte
-	// TagID returns the tag ID for this chunk.
+	PinCounter() uint64
+	WithPinCounter(p uint64) Chunk
 	TagID() uint32
-	// WithTagID attaches the tag ID to the chunk.
 	WithTagID(t uint32) Chunk
-	// Stamp returns the postage stamp associated with this chunk.
-	Stamp() Stamp
-	// WithStamp attaches a postage stamp to the chunk.
-	WithStamp(Stamp) Chunk
-	// Radius is the PO above which the batch is preserved.
-	Radius() uint8
-	// Depth returns the batch depth of the stamp - allowed batch size = 2^{depth}.
-	Depth() uint8
-	// BucketDepth returns the bucket depth of the batch of the stamp - always < depth.
-	BucketDepth() uint8
-	// Immutable returns whether the batch is immutable
-	Immutable() bool
-	// WithBatch attaches batch parameters to the chunk.
-	WithBatch(radius, depth, bucketDepth uint8, immutable bool) Chunk
-	// Equal checks if the chunk is equal to another.
 	Equal(Chunk) bool
 }
 
-// Stamp interface for postage.Stamp to avoid circular dependency
-type Stamp interface {
-	BatchID() []byte
-	Index() []byte
-	Sig() []byte
-	Timestamp() []byte
-	encoding.BinaryMarshaler
-	encoding.BinaryUnmarshaler
-}
-
 type chunk struct {
-	addr        Address
-	sdata       []byte
-	tagID       uint32
-	stamp       Stamp
-	radius      uint8
-	depth       uint8
-	bucketDepth uint8
-	immutable   bool
+	addr       Address
+	sdata      []byte
+	pinCounter uint64
+	tagID      uint32
 }
 
 func NewChunk(addr Address, data []byte) Chunk {
@@ -180,21 +148,13 @@ func NewChunk(addr Address, data []byte) Chunk {
 	}
 }
 
+func (c *chunk) WithPinCounter(p uint64) Chunk {
+	c.pinCounter = p
+	return c
+}
+
 func (c *chunk) WithTagID(t uint32) Chunk {
 	c.tagID = t
-	return c
-}
-
-func (c *chunk) WithStamp(stamp Stamp) Chunk {
-	c.stamp = stamp
-	return c
-}
-
-func (c *chunk) WithBatch(radius, depth, bucketDepth uint8, immutable bool) Chunk {
-	c.radius = radius
-	c.depth = depth
-	c.bucketDepth = bucketDepth
-	c.immutable = immutable
 	return c
 }
 
@@ -206,28 +166,12 @@ func (c *chunk) Data() []byte {
 	return c.sdata
 }
 
+func (c *chunk) PinCounter() uint64 {
+	return c.pinCounter
+}
+
 func (c *chunk) TagID() uint32 {
 	return c.tagID
-}
-
-func (c *chunk) Stamp() Stamp {
-	return c.stamp
-}
-
-func (c *chunk) Radius() uint8 {
-	return c.radius
-}
-
-func (c *chunk) Depth() uint8 {
-	return c.depth
-}
-
-func (c *chunk) BucketDepth() uint8 {
-	return c.bucketDepth
-}
-
-func (c *chunk) Immutable() bool {
-	return c.immutable
 }
 
 func (c *chunk) String() string {

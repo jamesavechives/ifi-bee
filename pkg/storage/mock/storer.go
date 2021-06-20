@@ -6,6 +6,7 @@ package mock
 
 import (
 	"context"
+	"errors"
 	"sync"
 
 	"github.com/ethersphere/bee/pkg/storage"
@@ -15,7 +16,7 @@ import (
 var _ storage.Storer = (*MockStorer)(nil)
 
 type MockStorer struct {
-	store           map[string]swarm.Chunk
+	store           map[string][]byte
 	modePut         map[string]storage.ModePut
 	modeSet         map[string]storage.ModeSet
 	pinnedAddress   []swarm.Address // Stores the pinned address
@@ -27,7 +28,6 @@ type MockStorer struct {
 	quit            chan struct{}
 	baseAddress     []byte
 	bins            []uint64
-	subPullCalls    int
 }
 
 func WithSubscribePullChunks(chs ...storage.Descriptor) Option {
@@ -53,7 +53,7 @@ func WithPartialInterval(v bool) Option {
 
 func NewStorer(opts ...Option) *MockStorer {
 	s := &MockStorer{
-		store:    make(map[string]swarm.Chunk),
+		store:    make(map[string][]byte),
 		modePut:  make(map[string]storage.ModePut),
 		modeSet:  make(map[string]storage.ModeSet),
 		morePull: make(chan struct{}),
@@ -76,7 +76,7 @@ func (m *MockStorer) Get(_ context.Context, _ storage.ModeGet, addr swarm.Addres
 	if !has {
 		return nil, storage.ErrNotFound
 	}
-	return v, nil
+	return swarm.NewChunk(addr, v), nil
 }
 
 func (m *MockStorer) Put(ctx context.Context, mode storage.ModePut, chs ...swarm.Chunk) (exist []bool, err error) {
@@ -99,9 +99,7 @@ func (m *MockStorer) Put(ctx context.Context, mode storage.ModePut, chs ...swarm
 		// and copies the data from the call into the in-memory store
 		b := make([]byte, len(ch.Data()))
 		copy(b, ch.Data())
-		addr := swarm.NewAddress(ch.Address().Bytes())
-		stamp := ch.Stamp()
-		m.store[ch.Address().String()] = swarm.NewChunk(addr, b).WithStamp(stamp)
+		m.store[ch.Address().String()] = b
 		m.modePut[ch.Address().String()] = mode
 
 		// pin chunks if needed
@@ -221,10 +219,6 @@ func (m *MockStorer) LastPullSubscriptionBinID(bin uint8) (id uint64, err error)
 }
 
 func (m *MockStorer) SubscribePull(ctx context.Context, bin uint8, since, until uint64) (<-chan storage.Descriptor, <-chan struct{}, func()) {
-	m.mtx.Lock()
-	m.subPullCalls++
-	m.mtx.Unlock()
-
 	c := make(chan storage.Descriptor)
 	done := make(chan struct{})
 	stop := func() {
@@ -292,14 +286,38 @@ func (m *MockStorer) MorePull(d ...storage.Descriptor) {
 	close(m.morePull)
 }
 
-func (m *MockStorer) SubscribePullCalls() int {
-	m.mtx.Lock()
-	defer m.mtx.Unlock()
-	return m.subPullCalls
-}
-
 func (m *MockStorer) SubscribePush(ctx context.Context) (c <-chan swarm.Chunk, stop func()) {
 	panic("not implemented") // TODO: Implement
+}
+
+func (m *MockStorer) PinnedChunks(ctx context.Context, offset, cursor int) (pinnedChunks []*storage.Pinner, err error) {
+	m.mtx.Lock()
+	defer m.mtx.Unlock()
+	if len(m.pinnedAddress) == 0 {
+		return pinnedChunks, nil
+	}
+	for i, addr := range m.pinnedAddress {
+		pi := &storage.Pinner{
+			Address:    swarm.NewAddress(addr.Bytes()),
+			PinCounter: m.pinnedCounter[i],
+		}
+		pinnedChunks = append(pinnedChunks, pi)
+	}
+	if pinnedChunks == nil {
+		return pinnedChunks, errors.New("pin chunks: leveldb: not found")
+	}
+	return pinnedChunks, nil
+}
+
+func (m *MockStorer) PinCounter(address swarm.Address) (uint64, error) {
+	m.mtx.Lock()
+	defer m.mtx.Unlock()
+	for i, addr := range m.pinnedAddress {
+		if addr.String() == address.String() {
+			return m.pinnedCounter[i], nil
+		}
+	}
+	return 0, storage.ErrNotFound
 }
 
 func (m *MockStorer) Close() error {

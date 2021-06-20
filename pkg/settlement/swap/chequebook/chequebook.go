@@ -12,12 +12,12 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethersphere/bee/pkg/sctx"
 	"github.com/ethersphere/bee/pkg/settlement/swap/erc20"
+	"github.com/ethersphere/bee/pkg/settlement/swap/transaction"
 	"github.com/ethersphere/bee/pkg/storage"
-	"github.com/ethersphere/bee/pkg/transaction"
-	"github.com/ethersphere/go-sw3-abi/sw3abi"
+	"github.com/ethersphere/sw3-bindings/v3/simpleswapfactory"
 )
 
 // SendChequeFunc is a function to send cheques.
@@ -34,7 +34,7 @@ var (
 	// ErrInsufficientFunds is the error when the chequebook has not enough free funds for a user action
 	ErrInsufficientFunds = errors.New("insufficient token balance")
 
-	chequebookABI          = transaction.ParseABIUnchecked(sw3abi.ERC20SimpleSwapABIv0_3_1)
+	chequebookABI          = transaction.ParseABIUnchecked(simpleswapfactory.ERC20SimpleSwapABI)
 	chequeCashedEventType  = chequebookABI.Events["ChequeCashed"]
 	chequeBouncedEventType = chequebookABI.Events["ChequeBounced"]
 )
@@ -63,11 +63,12 @@ type Service interface {
 
 type service struct {
 	lock               sync.Mutex
+	backend            transaction.Backend
 	transactionService transaction.Service
 
-	address      common.Address
-	contract     *chequebookContract
-	ownerAddress common.Address
+	address            common.Address
+	chequebookInstance SimpleSwapBinding
+	ownerAddress       common.Address
 
 	erc20Service erc20.Service
 
@@ -77,11 +78,17 @@ type service struct {
 }
 
 // New creates a new chequebook service for the provided chequebook contract.
-func New(transactionService transaction.Service, address, ownerAddress common.Address, store storage.StateStorer, chequeSigner ChequeSigner, erc20Service erc20.Service) (Service, error) {
+func New(backend transaction.Backend, transactionService transaction.Service, address, ownerAddress common.Address, store storage.StateStorer, chequeSigner ChequeSigner, erc20Service erc20.Service, simpleSwapBindingFunc SimpleSwapBindingFunc) (Service, error) {
+	chequebookInstance, err := simpleSwapBindingFunc(address, backend)
+	if err != nil {
+		return nil, err
+	}
+
 	return &service{
+		backend:             backend,
 		transactionService:  transactionService,
 		address:             address,
-		contract:            newChequebookContract(address, transactionService),
+		chequebookInstance:  chequebookInstance,
 		ownerAddress:        ownerAddress,
 		erc20Service:        erc20Service,
 		store:               store,
@@ -112,7 +119,9 @@ func (s *service) Deposit(ctx context.Context, amount *big.Int) (hash common.Has
 
 // Balance returns the token balance of the chequebook.
 func (s *service) Balance(ctx context.Context) (*big.Int, error) {
-	return s.contract.Balance(ctx)
+	return s.chequebookInstance.Balance(&bind.CallOpts{
+		Context: ctx,
+	})
 }
 
 // AvailableBalance returns the token balance of the chequebook which is not yet used for uncashed cheques.
@@ -127,7 +136,9 @@ func (s *service) AvailableBalance(ctx context.Context) (*big.Int, error) {
 		return nil, err
 	}
 
-	totalPaidOut, err := s.contract.TotalPaidOut(ctx)
+	totalPaidOut, err := s.chequebookInstance.TotalPaidOut(&bind.CallOpts{
+		Context: ctx,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -323,12 +334,11 @@ func (s *service) Withdraw(ctx context.Context, amount *big.Int) (hash common.Ha
 	}
 
 	request := &transaction.TxRequest{
-		To:          &s.address,
-		Data:        callData,
-		GasPrice:    sctx.GetGasPrice(ctx),
-		GasLimit:    95000,
-		Value:       big.NewInt(0),
-		Description: fmt.Sprintf("chequebook withdrawal of %d BZZ", amount),
+		To:       &s.address,
+		Data:     callData,
+		GasPrice: nil,
+		GasLimit: 0,
+		Value:    big.NewInt(0),
 	}
 
 	txHash, err := s.transactionService.Send(ctx, request)
