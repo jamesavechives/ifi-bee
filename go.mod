@@ -1,4 +1,4 @@
-module github.com/ethersphere/bee
+module github.com/yanhuangpai/ifi-bee
 
 go 1.15
 
