@@ -10,10 +10,10 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/ethersphere/bee/pkg/file"
-	"github.com/ethersphere/bee/pkg/file/splitter/internal"
-	"github.com/ethersphere/bee/pkg/storage"
-	"github.com/ethersphere/bee/pkg/swarm"
+	"github.com/yanhuangpai/ifi-bee/pkg/file"
+	"github.com/yanhuangpai/ifi-bee/pkg/file/splitter/internal"
+	"github.com/yanhuangpai/ifi-bee/pkg/storage"
+	"github.com/yanhuangpai/ifi-bee/pkg/swarm"
 )
 
 type putWrapper struct {

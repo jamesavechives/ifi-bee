@@ -44,7 +44,7 @@ jobs:
       - name: Install latest beekeeper
         run: |
           export TAG=$(curl -s https://api.github.com/repos/ethersphere/beekeeper/releases/latest | jq -r .tag_name)
-          curl -Ls https://github.com/ethersphere/beekeeper/releases/download/${TAG}/beekeeper-linux-amd64 -o beekeeper
+          curl -Ls https://github.com/yanhuangpai/ifi-beekeeper/releases/download/${TAG}/beekeeper-linux-amd64 -o beekeeper
           chmod +x beekeeper
       - name: Prepare testing cluster (DNS discovery)
         run: |

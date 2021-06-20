@@ -15,9 +15,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethersphere/bee/pkg/p2p"
-	"github.com/ethersphere/bee/pkg/p2p/streamtest"
-	"github.com/ethersphere/bee/pkg/swarm"
+	"github.com/yanhuangpai/ifi-bee/pkg/p2p"
+	"github.com/yanhuangpai/ifi-bee/pkg/p2p/streamtest"
+	"github.com/yanhuangpai/ifi-bee/pkg/swarm"
 	"golang.org/x/sync/errgroup"
 )
 

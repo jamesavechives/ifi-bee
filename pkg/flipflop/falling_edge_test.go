@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethersphere/bee/pkg/flipflop"
+	"github.com/yanhuangpai/ifi-bee/pkg/flipflop"
 )
 
 func TestFallingEdge(t *testing.T) {

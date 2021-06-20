@@ -10,15 +10,15 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/ethersphere/bee/pkg/bzz"
-	"github.com/ethersphere/bee/pkg/crypto"
-	"github.com/ethersphere/bee/pkg/debugapi"
-	"github.com/ethersphere/bee/pkg/jsonhttp"
-	"github.com/ethersphere/bee/pkg/jsonhttp/jsonhttptest"
-	"github.com/ethersphere/bee/pkg/p2p"
-	"github.com/ethersphere/bee/pkg/p2p/mock"
-	"github.com/ethersphere/bee/pkg/swarm"
 	ma "github.com/multiformats/go-multiaddr"
+	"github.com/yanhuangpai/ifi-bee/pkg/bzz"
+	"github.com/yanhuangpai/ifi-bee/pkg/crypto"
+	"github.com/yanhuangpai/ifi-bee/pkg/debugapi"
+	"github.com/yanhuangpai/ifi-bee/pkg/jsonhttp"
+	"github.com/yanhuangpai/ifi-bee/pkg/jsonhttp/jsonhttptest"
+	"github.com/yanhuangpai/ifi-bee/pkg/p2p"
+	"github.com/yanhuangpai/ifi-bee/pkg/p2p/mock"
+	"github.com/yanhuangpai/ifi-bee/pkg/swarm"
 )
 
 func TestConnect(t *testing.T) {

@@ -21,8 +21,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/ethersphere/bee/pkg/storage"
-	"github.com/ethersphere/bee/pkg/swarm"
+	"github.com/yanhuangpai/ifi-bee/pkg/storage"
+	"github.com/yanhuangpai/ifi-bee/pkg/swarm"
 )
 
 // TestExportImport constructs two databases, one to put and export

@@ -10,8 +10,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/ethersphere/bee/pkg/resolver/client/ens"
-	"github.com/ethersphere/bee/pkg/swarm"
+	"github.com/yanhuangpai/ifi-bee/pkg/resolver/client/ens"
+	"github.com/yanhuangpai/ifi-bee/pkg/swarm"
 )
 
 func TestENSntegration(t *testing.T) {

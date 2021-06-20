@@ -8,9 +8,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/ethersphere/bee/pkg/kademlia/pslice"
-	"github.com/ethersphere/bee/pkg/swarm"
-	"github.com/ethersphere/bee/pkg/swarm/test"
+	"github.com/yanhuangpai/ifi-bee/pkg/kademlia/pslice"
+	"github.com/yanhuangpai/ifi-bee/pkg/swarm"
+	"github.com/yanhuangpai/ifi-bee/pkg/swarm/test"
 )
 
 // TestShallowestEmpty tests that ShallowestEmpty functionality works correctly.

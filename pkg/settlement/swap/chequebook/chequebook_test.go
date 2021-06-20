@@ -14,14 +14,14 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethersphere/bee/pkg/settlement/swap/chequebook"
-	"github.com/ethersphere/bee/pkg/settlement/swap/erc20"
-	erc20mock "github.com/ethersphere/bee/pkg/settlement/swap/erc20/mock"
-	"github.com/ethersphere/bee/pkg/settlement/swap/transaction"
-	"github.com/ethersphere/bee/pkg/settlement/swap/transaction/backendmock"
-	transactionmock "github.com/ethersphere/bee/pkg/settlement/swap/transaction/mock"
-	storemock "github.com/ethersphere/bee/pkg/statestore/mock"
-	"github.com/ethersphere/bee/pkg/storage"
+	"github.com/yanhuangpai/ifi-bee/pkg/settlement/swap/chequebook"
+	"github.com/yanhuangpai/ifi-bee/pkg/settlement/swap/erc20"
+	erc20mock "github.com/yanhuangpai/ifi-bee/pkg/settlement/swap/erc20/mock"
+	"github.com/yanhuangpai/ifi-bee/pkg/settlement/swap/transaction"
+	"github.com/yanhuangpai/ifi-bee/pkg/settlement/swap/transaction/backendmock"
+	transactionmock "github.com/yanhuangpai/ifi-bee/pkg/settlement/swap/transaction/mock"
+	storemock "github.com/yanhuangpai/ifi-bee/pkg/statestore/mock"
+	"github.com/yanhuangpai/ifi-bee/pkg/storage"
 )
 
 func newTestChequebook(

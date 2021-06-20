@@ -11,12 +11,12 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/ethersphere/bee/pkg/accounting"
-	"github.com/ethersphere/bee/pkg/accounting/mock"
-	"github.com/ethersphere/bee/pkg/debugapi"
-	"github.com/ethersphere/bee/pkg/jsonhttp"
-	"github.com/ethersphere/bee/pkg/jsonhttp/jsonhttptest"
-	"github.com/ethersphere/bee/pkg/swarm"
+	"github.com/yanhuangpai/ifi-bee/pkg/accounting"
+	"github.com/yanhuangpai/ifi-bee/pkg/accounting/mock"
+	"github.com/yanhuangpai/ifi-bee/pkg/debugapi"
+	"github.com/yanhuangpai/ifi-bee/pkg/jsonhttp"
+	"github.com/yanhuangpai/ifi-bee/pkg/jsonhttp/jsonhttptest"
+	"github.com/yanhuangpai/ifi-bee/pkg/swarm"
 )
 
 func TestBalances(t *testing.T) {

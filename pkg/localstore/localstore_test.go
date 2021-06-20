@@ -29,12 +29,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethersphere/bee/pkg/logging"
-	"github.com/ethersphere/bee/pkg/shed"
-	"github.com/ethersphere/bee/pkg/storage"
-	chunktesting "github.com/ethersphere/bee/pkg/storage/testing"
-	"github.com/ethersphere/bee/pkg/swarm"
 	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/yanhuangpai/ifi-bee/pkg/logging"
+	"github.com/yanhuangpai/ifi-bee/pkg/shed"
+	"github.com/yanhuangpai/ifi-bee/pkg/storage"
+	chunktesting "github.com/yanhuangpai/ifi-bee/pkg/storage/testing"
+	"github.com/yanhuangpai/ifi-bee/pkg/swarm"
 )
 
 func init() {

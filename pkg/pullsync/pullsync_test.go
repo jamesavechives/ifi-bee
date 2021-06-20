@@ -11,13 +11,13 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/ethersphere/bee/pkg/logging"
-	"github.com/ethersphere/bee/pkg/p2p"
-	"github.com/ethersphere/bee/pkg/p2p/streamtest"
-	"github.com/ethersphere/bee/pkg/pullsync"
-	"github.com/ethersphere/bee/pkg/pullsync/pullstorage/mock"
-	testingc "github.com/ethersphere/bee/pkg/storage/testing"
-	"github.com/ethersphere/bee/pkg/swarm"
+	"github.com/yanhuangpai/ifi-bee/pkg/logging"
+	"github.com/yanhuangpai/ifi-bee/pkg/p2p"
+	"github.com/yanhuangpai/ifi-bee/pkg/p2p/streamtest"
+	"github.com/yanhuangpai/ifi-bee/pkg/pullsync"
+	"github.com/yanhuangpai/ifi-bee/pkg/pullsync/pullstorage/mock"
+	testingc "github.com/yanhuangpai/ifi-bee/pkg/storage/testing"
+	"github.com/yanhuangpai/ifi-bee/pkg/swarm"
 )
 
 var (

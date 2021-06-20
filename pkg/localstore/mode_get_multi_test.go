@@ -22,7 +22,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/ethersphere/bee/pkg/storage"
+	"github.com/yanhuangpai/ifi-bee/pkg/storage"
 )
 
 // TestModeGetMulti stores chunks and validates that GetMulti

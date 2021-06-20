@@ -5,9 +5,9 @@
 package logging
 
 import (
-	m "github.com/ethersphere/bee/pkg/metrics"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
+	m "github.com/yanhuangpai/ifi-bee/pkg/metrics"
 )
 
 type metrics struct {

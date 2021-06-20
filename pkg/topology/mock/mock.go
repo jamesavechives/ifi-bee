@@ -8,8 +8,8 @@ import (
 	"context"
 	"sync"
 
-	"github.com/ethersphere/bee/pkg/swarm"
-	"github.com/ethersphere/bee/pkg/topology"
+	"github.com/yanhuangpai/ifi-bee/pkg/swarm"
+	"github.com/yanhuangpai/ifi-bee/pkg/topology"
 )
 
 type mock struct {

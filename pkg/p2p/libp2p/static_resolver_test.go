@@ -9,9 +9,9 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/ethersphere/bee/pkg/p2p/libp2p"
 	mockdns "github.com/foxcpp/go-mockdns"
 	ma "github.com/multiformats/go-multiaddr"
+	"github.com/yanhuangpai/ifi-bee/pkg/p2p/libp2p"
 )
 
 func TestStaticAddressResolver(t *testing.T) {

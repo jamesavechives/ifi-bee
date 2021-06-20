@@ -9,13 +9,13 @@ import (
 	"os"
 	"path/filepath"
 
-	cmdfile "github.com/ethersphere/bee/cmd/internal/file"
-	"github.com/ethersphere/bee/pkg/file"
-	"github.com/ethersphere/bee/pkg/file/joiner"
-	"github.com/ethersphere/bee/pkg/logging"
-	"github.com/ethersphere/bee/pkg/storage"
-	"github.com/ethersphere/bee/pkg/swarm"
 	"github.com/spf13/cobra"
+	cmdfile "github.com/yanhuangpai/ifi-bee/cmd/internal/file"
+	"github.com/yanhuangpai/ifi-bee/pkg/file"
+	"github.com/yanhuangpai/ifi-bee/pkg/file/joiner"
+	"github.com/yanhuangpai/ifi-bee/pkg/logging"
+	"github.com/yanhuangpai/ifi-bee/pkg/storage"
+	"github.com/yanhuangpai/ifi-bee/pkg/swarm"
 )
 
 var (

@@ -15,15 +15,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethersphere/bee/pkg/logging"
-	"github.com/ethersphere/bee/pkg/pushsync"
-	"github.com/ethersphere/bee/pkg/storage"
-	"github.com/ethersphere/bee/pkg/swarm"
-	"github.com/ethersphere/bee/pkg/tags"
-	"github.com/ethersphere/bee/pkg/topology"
-	"github.com/ethersphere/bee/pkg/tracing"
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
+	"github.com/yanhuangpai/ifi-bee/pkg/logging"
+	"github.com/yanhuangpai/ifi-bee/pkg/pushsync"
+	"github.com/yanhuangpai/ifi-bee/pkg/storage"
+	"github.com/yanhuangpai/ifi-bee/pkg/swarm"
+	"github.com/yanhuangpai/ifi-bee/pkg/tags"
+	"github.com/yanhuangpai/ifi-bee/pkg/topology"
+	"github.com/yanhuangpai/ifi-bee/pkg/tracing"
 )
 
 type Service struct {

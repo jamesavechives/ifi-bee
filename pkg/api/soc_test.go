@@ -12,15 +12,15 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/ethersphere/bee/pkg/api"
-	"github.com/ethersphere/bee/pkg/jsonhttp"
-	"github.com/ethersphere/bee/pkg/jsonhttp/jsonhttptest"
-	"github.com/ethersphere/bee/pkg/logging"
-	"github.com/ethersphere/bee/pkg/soc"
-	testingsoc "github.com/ethersphere/bee/pkg/soc/testing"
-	statestore "github.com/ethersphere/bee/pkg/statestore/mock"
-	"github.com/ethersphere/bee/pkg/storage/mock"
-	"github.com/ethersphere/bee/pkg/tags"
+	"github.com/yanhuangpai/ifi-bee/pkg/api"
+	"github.com/yanhuangpai/ifi-bee/pkg/jsonhttp"
+	"github.com/yanhuangpai/ifi-bee/pkg/jsonhttp/jsonhttptest"
+	"github.com/yanhuangpai/ifi-bee/pkg/logging"
+	"github.com/yanhuangpai/ifi-bee/pkg/soc"
+	testingsoc "github.com/yanhuangpai/ifi-bee/pkg/soc/testing"
+	statestore "github.com/yanhuangpai/ifi-bee/pkg/statestore/mock"
+	"github.com/yanhuangpai/ifi-bee/pkg/storage/mock"
+	"github.com/yanhuangpai/ifi-bee/pkg/tags"
 )
 
 func TestSOC(t *testing.T) {

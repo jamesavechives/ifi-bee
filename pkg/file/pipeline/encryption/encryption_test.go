@@ -9,10 +9,10 @@ import (
 	"encoding/binary"
 	"testing"
 
-	mockenc "github.com/ethersphere/bee/pkg/encryption/mock"
-	"github.com/ethersphere/bee/pkg/file/pipeline"
-	"github.com/ethersphere/bee/pkg/file/pipeline/encryption"
-	mock "github.com/ethersphere/bee/pkg/file/pipeline/mock"
+	mockenc "github.com/yanhuangpai/ifi-bee/pkg/encryption/mock"
+	"github.com/yanhuangpai/ifi-bee/pkg/file/pipeline"
+	"github.com/yanhuangpai/ifi-bee/pkg/file/pipeline/encryption"
+	mock "github.com/yanhuangpai/ifi-bee/pkg/file/pipeline/mock"
 )
 
 var (

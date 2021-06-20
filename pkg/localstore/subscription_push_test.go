@@ -24,8 +24,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethersphere/bee/pkg/storage"
-	"github.com/ethersphere/bee/pkg/swarm"
+	"github.com/yanhuangpai/ifi-bee/pkg/storage"
+	"github.com/yanhuangpai/ifi-bee/pkg/swarm"
 )
 
 // TestDB_SubscribePush uploads some chunks before and after

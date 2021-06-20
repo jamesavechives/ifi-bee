@@ -9,8 +9,8 @@ import (
 	"io"
 	"time"
 
-	"github.com/ethersphere/bee/pkg/p2p"
 	"github.com/libp2p/go-libp2p-core/network"
+	"github.com/yanhuangpai/ifi-bee/pkg/p2p"
 )
 
 var (

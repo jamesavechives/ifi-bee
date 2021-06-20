@@ -12,15 +12,15 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethersphere/bee/pkg/crypto"
-	"github.com/ethersphere/bee/pkg/logging"
-	mockp2p "github.com/ethersphere/bee/pkg/p2p/mock"
-	"github.com/ethersphere/bee/pkg/settlement/swap"
-	"github.com/ethersphere/bee/pkg/settlement/swap/chequebook"
-	mockchequebook "github.com/ethersphere/bee/pkg/settlement/swap/chequebook/mock"
-	mockchequestore "github.com/ethersphere/bee/pkg/settlement/swap/chequestore/mock"
-	mockstore "github.com/ethersphere/bee/pkg/statestore/mock"
-	"github.com/ethersphere/bee/pkg/swarm"
+	"github.com/yanhuangpai/ifi-bee/pkg/crypto"
+	"github.com/yanhuangpai/ifi-bee/pkg/logging"
+	mockp2p "github.com/yanhuangpai/ifi-bee/pkg/p2p/mock"
+	"github.com/yanhuangpai/ifi-bee/pkg/settlement/swap"
+	"github.com/yanhuangpai/ifi-bee/pkg/settlement/swap/chequebook"
+	mockchequebook "github.com/yanhuangpai/ifi-bee/pkg/settlement/swap/chequebook/mock"
+	mockchequestore "github.com/yanhuangpai/ifi-bee/pkg/settlement/swap/chequestore/mock"
+	mockstore "github.com/yanhuangpai/ifi-bee/pkg/statestore/mock"
+	"github.com/yanhuangpai/ifi-bee/pkg/swarm"
 )
 
 type swapProtocolMock struct {

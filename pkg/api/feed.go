@@ -14,13 +14,13 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethersphere/bee/pkg/feeds"
-	"github.com/ethersphere/bee/pkg/file/loadsave"
-	"github.com/ethersphere/bee/pkg/jsonhttp"
-	"github.com/ethersphere/bee/pkg/manifest"
-	"github.com/ethersphere/bee/pkg/soc"
-	"github.com/ethersphere/bee/pkg/swarm"
 	"github.com/gorilla/mux"
+	"github.com/yanhuangpai/ifi-bee/pkg/feeds"
+	"github.com/yanhuangpai/ifi-bee/pkg/file/loadsave"
+	"github.com/yanhuangpai/ifi-bee/pkg/jsonhttp"
+	"github.com/yanhuangpai/ifi-bee/pkg/manifest"
+	"github.com/yanhuangpai/ifi-bee/pkg/soc"
+	"github.com/yanhuangpai/ifi-bee/pkg/swarm"
 )
 
 const (

@@ -15,13 +15,13 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ethersphere/bee/pkg/collection/entry"
-	"github.com/ethersphere/bee/pkg/file"
-	"github.com/ethersphere/bee/pkg/file/joiner"
-	"github.com/ethersphere/bee/pkg/file/loadsave"
-	"github.com/ethersphere/bee/pkg/manifest"
-	"github.com/ethersphere/bee/pkg/storage"
-	"github.com/ethersphere/bee/pkg/swarm"
+	"github.com/yanhuangpai/ifi-bee/pkg/collection/entry"
+	"github.com/yanhuangpai/ifi-bee/pkg/file"
+	"github.com/yanhuangpai/ifi-bee/pkg/file/joiner"
+	"github.com/yanhuangpai/ifi-bee/pkg/file/loadsave"
+	"github.com/yanhuangpai/ifi-bee/pkg/manifest"
+	"github.com/yanhuangpai/ifi-bee/pkg/storage"
+	"github.com/yanhuangpai/ifi-bee/pkg/swarm"
 )
 
 var (

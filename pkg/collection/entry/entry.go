@@ -8,9 +8,9 @@ import (
 	"errors"
 	"math"
 
-	"github.com/ethersphere/bee/pkg/collection"
-	"github.com/ethersphere/bee/pkg/encryption"
-	"github.com/ethersphere/bee/pkg/swarm"
+	"github.com/yanhuangpai/ifi-bee/pkg/collection"
+	"github.com/yanhuangpai/ifi-bee/pkg/encryption"
+	"github.com/yanhuangpai/ifi-bee/pkg/swarm"
 )
 
 var (

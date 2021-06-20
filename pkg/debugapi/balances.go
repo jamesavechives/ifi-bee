@@ -9,10 +9,10 @@ import (
 	"math/big"
 	"net/http"
 
-	"github.com/ethersphere/bee/pkg/accounting"
-	"github.com/ethersphere/bee/pkg/jsonhttp"
-	"github.com/ethersphere/bee/pkg/swarm"
 	"github.com/gorilla/mux"
+	"github.com/yanhuangpai/ifi-bee/pkg/accounting"
+	"github.com/yanhuangpai/ifi-bee/pkg/jsonhttp"
+	"github.com/yanhuangpai/ifi-bee/pkg/swarm"
 )
 
 var (

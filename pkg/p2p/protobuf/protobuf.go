@@ -9,9 +9,9 @@ import (
 	"errors"
 	"io"
 
-	"github.com/ethersphere/bee/pkg/p2p"
 	ggio "github.com/gogo/protobuf/io"
 	"github.com/gogo/protobuf/proto"
+	"github.com/yanhuangpai/ifi-bee/pkg/p2p"
 )
 
 const delimitedReaderMaxSize = 128 * 1024 // max message size

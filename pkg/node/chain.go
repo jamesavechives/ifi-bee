@@ -13,14 +13,14 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/ethersphere/bee/pkg/crypto"
-	"github.com/ethersphere/bee/pkg/logging"
-	"github.com/ethersphere/bee/pkg/p2p/libp2p"
-	"github.com/ethersphere/bee/pkg/settlement/swap"
-	"github.com/ethersphere/bee/pkg/settlement/swap/chequebook"
-	"github.com/ethersphere/bee/pkg/settlement/swap/swapprotocol"
-	"github.com/ethersphere/bee/pkg/settlement/swap/transaction"
-	"github.com/ethersphere/bee/pkg/storage"
+	"github.com/yanhuangpai/ifi-bee/pkg/crypto"
+	"github.com/yanhuangpai/ifi-bee/pkg/logging"
+	"github.com/yanhuangpai/ifi-bee/pkg/p2p/libp2p"
+	"github.com/yanhuangpai/ifi-bee/pkg/settlement/swap"
+	"github.com/yanhuangpai/ifi-bee/pkg/settlement/swap/chequebook"
+	"github.com/yanhuangpai/ifi-bee/pkg/settlement/swap/swapprotocol"
+	"github.com/yanhuangpai/ifi-bee/pkg/settlement/swap/transaction"
+	"github.com/yanhuangpai/ifi-bee/pkg/storage"
 )
 
 const (

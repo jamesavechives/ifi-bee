@@ -10,15 +10,15 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/ethersphere/bee/pkg/logging"
-	statestore "github.com/ethersphere/bee/pkg/statestore/mock"
+	"github.com/yanhuangpai/ifi-bee/pkg/logging"
+	statestore "github.com/yanhuangpai/ifi-bee/pkg/statestore/mock"
 
-	"github.com/ethersphere/bee/pkg/api"
-	"github.com/ethersphere/bee/pkg/jsonhttp"
-	"github.com/ethersphere/bee/pkg/jsonhttp/jsonhttptest"
-	"github.com/ethersphere/bee/pkg/storage/mock"
-	testingc "github.com/ethersphere/bee/pkg/storage/testing"
-	"github.com/ethersphere/bee/pkg/tags"
+	"github.com/yanhuangpai/ifi-bee/pkg/api"
+	"github.com/yanhuangpai/ifi-bee/pkg/jsonhttp"
+	"github.com/yanhuangpai/ifi-bee/pkg/jsonhttp/jsonhttptest"
+	"github.com/yanhuangpai/ifi-bee/pkg/storage/mock"
+	testingc "github.com/yanhuangpai/ifi-bee/pkg/storage/testing"
+	"github.com/yanhuangpai/ifi-bee/pkg/tags"
 )
 
 // TestPinChunkHandler checks for pinning, unpinning and listing of chunks.

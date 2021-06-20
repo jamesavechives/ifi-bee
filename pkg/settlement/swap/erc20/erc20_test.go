@@ -10,11 +10,11 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethersphere/bee/pkg/settlement/swap/erc20"
-	"github.com/ethersphere/bee/pkg/settlement/swap/transaction"
-	backendmock "github.com/ethersphere/bee/pkg/settlement/swap/transaction/backendmock"
-	transactionmock "github.com/ethersphere/bee/pkg/settlement/swap/transaction/mock"
 	"github.com/ethersphere/sw3-bindings/v3/simpleswapfactory"
+	"github.com/yanhuangpai/ifi-bee/pkg/settlement/swap/erc20"
+	"github.com/yanhuangpai/ifi-bee/pkg/settlement/swap/transaction"
+	backendmock "github.com/yanhuangpai/ifi-bee/pkg/settlement/swap/transaction/backendmock"
+	transactionmock "github.com/yanhuangpai/ifi-bee/pkg/settlement/swap/transaction/mock"
 )
 
 var (

@@ -14,14 +14,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethersphere/bee/pkg/logging"
-	"github.com/ethersphere/bee/pkg/netstore"
-	"github.com/ethersphere/bee/pkg/pss"
-	"github.com/ethersphere/bee/pkg/recovery"
-	"github.com/ethersphere/bee/pkg/sctx"
-	"github.com/ethersphere/bee/pkg/storage"
-	"github.com/ethersphere/bee/pkg/storage/mock"
-	"github.com/ethersphere/bee/pkg/swarm"
+	"github.com/yanhuangpai/ifi-bee/pkg/logging"
+	"github.com/yanhuangpai/ifi-bee/pkg/netstore"
+	"github.com/yanhuangpai/ifi-bee/pkg/pss"
+	"github.com/yanhuangpai/ifi-bee/pkg/recovery"
+	"github.com/yanhuangpai/ifi-bee/pkg/sctx"
+	"github.com/yanhuangpai/ifi-bee/pkg/storage"
+	"github.com/yanhuangpai/ifi-bee/pkg/storage/mock"
+	"github.com/yanhuangpai/ifi-bee/pkg/swarm"
 )
 
 var chunkData = []byte("mockdata")

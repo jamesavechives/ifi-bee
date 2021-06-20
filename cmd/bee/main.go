@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/ethersphere/bee/cmd/bee/cmd"
+	"github.com/yanhuangpai/ifi-bee/cmd/bee/cmd"
 )
 
 func main() {

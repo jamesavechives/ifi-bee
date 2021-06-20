@@ -5,7 +5,7 @@
 package encryption
 
 import (
-	"github.com/ethersphere/bee/pkg/swarm"
+	"github.com/yanhuangpai/ifi-bee/pkg/swarm"
 	"golang.org/x/crypto/sha3"
 )
 

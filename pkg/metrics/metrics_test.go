@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ethersphere/bee/pkg/metrics"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/yanhuangpai/ifi-bee/pkg/metrics"
 )
 
 func TestPrometheusCollectorsFromFields(t *testing.T) {

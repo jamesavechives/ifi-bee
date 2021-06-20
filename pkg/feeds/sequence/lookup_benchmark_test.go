@@ -9,11 +9,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/ethersphere/bee/pkg/crypto"
-	"github.com/ethersphere/bee/pkg/feeds"
-	"github.com/ethersphere/bee/pkg/feeds/sequence"
-	feedstesting "github.com/ethersphere/bee/pkg/feeds/testing"
-	"github.com/ethersphere/bee/pkg/storage/mock"
+	"github.com/yanhuangpai/ifi-bee/pkg/crypto"
+	"github.com/yanhuangpai/ifi-bee/pkg/feeds"
+	"github.com/yanhuangpai/ifi-bee/pkg/feeds/sequence"
+	feedstesting "github.com/yanhuangpai/ifi-bee/pkg/feeds/testing"
+	"github.com/yanhuangpai/ifi-bee/pkg/storage/mock"
 )
 
 func BenchmarkFinder(b *testing.B) {

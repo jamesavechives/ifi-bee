@@ -9,8 +9,8 @@ import (
 	"math"
 	"sync"
 
-	"github.com/ethersphere/bee/pkg/pullsync"
-	"github.com/ethersphere/bee/pkg/swarm"
+	"github.com/yanhuangpai/ifi-bee/pkg/pullsync"
+	"github.com/yanhuangpai/ifi-bee/pkg/swarm"
 )
 
 var _ pullsync.Interface = (*PullSyncMock)(nil)

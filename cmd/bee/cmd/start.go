@@ -22,18 +22,18 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/ethersphere/bee"
-	"github.com/ethersphere/bee/pkg/crypto"
-	"github.com/ethersphere/bee/pkg/crypto/clef"
-	"github.com/ethersphere/bee/pkg/keystore"
-	filekeystore "github.com/ethersphere/bee/pkg/keystore/file"
-	memkeystore "github.com/ethersphere/bee/pkg/keystore/mem"
-	"github.com/ethersphere/bee/pkg/logging"
-	"github.com/ethersphere/bee/pkg/node"
-	"github.com/ethersphere/bee/pkg/resolver/multiresolver"
-	"github.com/ethersphere/bee/pkg/swarm"
 	"github.com/kardianos/service"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/yanhuangpai/ifi-bee/pkg/crypto"
+	"github.com/yanhuangpai/ifi-bee/pkg/crypto/clef"
+	"github.com/yanhuangpai/ifi-bee/pkg/keystore"
+	filekeystore "github.com/yanhuangpai/ifi-bee/pkg/keystore/file"
+	memkeystore "github.com/yanhuangpai/ifi-bee/pkg/keystore/mem"
+	"github.com/yanhuangpai/ifi-bee/pkg/logging"
+	"github.com/yanhuangpai/ifi-bee/pkg/node"
+	"github.com/yanhuangpai/ifi-bee/pkg/resolver/multiresolver"
+	"github.com/yanhuangpai/ifi-bee/pkg/swarm"
 )
 
 const (
@@ -108,8 +108,8 @@ Welcome to the Swarm.... Bzzz Bzzzz Bzzzz
                    !                   `
 
 			fmt.Println(beeASCII)
-			logger.Infof("version: %v", bee.Version)
-
+			logger.Infof("version1: %v", bee.Version)
+			fmt.Println("I am James Walstonn.....")
 			debugAPIAddr := c.config.GetString(optionNameDebugAPIAddr)
 			if !c.config.GetBool(optionNameDebugAPIEnable) {
 				debugAPIAddr = ""
@@ -119,7 +119,7 @@ Welcome to the Swarm.... Bzzz Bzzzz Bzzzz
 			if err != nil {
 				return err
 			}
-
+			fmt.Println("James Walstonn Waiting Here.....")
 			b, err := node.NewBee(c.config.GetString(optionNameP2PAddr), signerConfig.address, *signerConfig.publicKey, signerConfig.signer, c.config.GetUint64(optionNameNetworkID), logger, signerConfig.libp2pPrivateKey, signerConfig.pssPrivateKey, node.Options{
 				DataDir:                  c.config.GetString(optionNameDataDir),
 				DBCapacity:               c.config.GetUint64(optionNameDBCapacity),

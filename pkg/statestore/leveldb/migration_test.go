@@ -21,7 +21,7 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/ethersphere/bee/pkg/logging"
+	"github.com/yanhuangpai/ifi-bee/pkg/logging"
 )
 
 func TestOneMigration(t *testing.T) {

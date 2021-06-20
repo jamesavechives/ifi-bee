@@ -15,11 +15,11 @@ import (
 	random "math/rand"
 
 	"github.com/btcsuite/btcd/btcec"
-	"github.com/ethersphere/bee/pkg/bmtpool"
-	"github.com/ethersphere/bee/pkg/crypto"
-	"github.com/ethersphere/bee/pkg/encryption"
-	"github.com/ethersphere/bee/pkg/encryption/elgamal"
-	"github.com/ethersphere/bee/pkg/swarm"
+	"github.com/yanhuangpai/ifi-bee/pkg/bmtpool"
+	"github.com/yanhuangpai/ifi-bee/pkg/crypto"
+	"github.com/yanhuangpai/ifi-bee/pkg/encryption"
+	"github.com/yanhuangpai/ifi-bee/pkg/encryption/elgamal"
+	"github.com/yanhuangpai/ifi-bee/pkg/swarm"
 )
 
 var (

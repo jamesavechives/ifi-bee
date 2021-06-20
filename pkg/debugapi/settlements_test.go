@@ -11,12 +11,12 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/ethersphere/bee/pkg/debugapi"
-	"github.com/ethersphere/bee/pkg/jsonhttp"
-	"github.com/ethersphere/bee/pkg/jsonhttp/jsonhttptest"
-	"github.com/ethersphere/bee/pkg/settlement"
-	"github.com/ethersphere/bee/pkg/settlement/swap/mock"
-	"github.com/ethersphere/bee/pkg/swarm"
+	"github.com/yanhuangpai/ifi-bee/pkg/debugapi"
+	"github.com/yanhuangpai/ifi-bee/pkg/jsonhttp"
+	"github.com/yanhuangpai/ifi-bee/pkg/jsonhttp/jsonhttptest"
+	"github.com/yanhuangpai/ifi-bee/pkg/settlement"
+	"github.com/yanhuangpai/ifi-bee/pkg/settlement/swap/mock"
+	"github.com/yanhuangpai/ifi-bee/pkg/swarm"
 )
 
 func TestSettlements(t *testing.T) {

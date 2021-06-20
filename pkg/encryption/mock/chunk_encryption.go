@@ -5,7 +5,7 @@
 package mock
 
 import (
-	"github.com/ethersphere/bee/pkg/encryption"
+	"github.com/yanhuangpai/ifi-bee/pkg/encryption"
 )
 
 type chunkEncrypter struct {

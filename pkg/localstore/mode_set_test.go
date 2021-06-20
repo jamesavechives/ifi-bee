@@ -22,14 +22,14 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/ethersphere/bee/pkg/logging"
-	statestore "github.com/ethersphere/bee/pkg/statestore/mock"
+	"github.com/yanhuangpai/ifi-bee/pkg/logging"
+	statestore "github.com/yanhuangpai/ifi-bee/pkg/statestore/mock"
 
-	"github.com/ethersphere/bee/pkg/shed"
-	"github.com/ethersphere/bee/pkg/storage"
-	"github.com/ethersphere/bee/pkg/tags"
-	tagtesting "github.com/ethersphere/bee/pkg/tags/testing"
 	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/yanhuangpai/ifi-bee/pkg/shed"
+	"github.com/yanhuangpai/ifi-bee/pkg/storage"
+	"github.com/yanhuangpai/ifi-bee/pkg/tags"
+	tagtesting "github.com/yanhuangpai/ifi-bee/pkg/tags/testing"
 )
 
 // here we try to set a normal tag (that should be handled by pushsync)

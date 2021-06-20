@@ -12,13 +12,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ethersphere/bee/pkg/file"
-	"github.com/ethersphere/bee/pkg/file/joiner"
-	"github.com/ethersphere/bee/pkg/file/pipeline/builder"
-	test "github.com/ethersphere/bee/pkg/file/testing"
-	"github.com/ethersphere/bee/pkg/storage"
-	"github.com/ethersphere/bee/pkg/storage/mock"
-	"github.com/ethersphere/bee/pkg/swarm"
+	"github.com/yanhuangpai/ifi-bee/pkg/file"
+	"github.com/yanhuangpai/ifi-bee/pkg/file/joiner"
+	"github.com/yanhuangpai/ifi-bee/pkg/file/pipeline/builder"
+	test "github.com/yanhuangpai/ifi-bee/pkg/file/testing"
+	"github.com/yanhuangpai/ifi-bee/pkg/storage"
+	"github.com/yanhuangpai/ifi-bee/pkg/storage/mock"
+	"github.com/yanhuangpai/ifi-bee/pkg/swarm"
 )
 
 var (

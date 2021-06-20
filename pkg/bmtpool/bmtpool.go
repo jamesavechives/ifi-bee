@@ -7,9 +7,9 @@
 package bmtpool
 
 import (
-	"github.com/ethersphere/bee/pkg/swarm"
 	bmtlegacy "github.com/ethersphere/bmt/legacy"
 	"github.com/ethersphere/bmt/pool"
+	"github.com/yanhuangpai/ifi-bee/pkg/swarm"
 )
 
 var instance pool.Pooler

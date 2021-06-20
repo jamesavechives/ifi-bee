@@ -9,10 +9,10 @@ import (
 	"io/ioutil"
 	"strings"
 
-	"github.com/ethersphere/bee/pkg/logging"
-	"github.com/ethersphere/bee/pkg/node"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/yanhuangpai/ifi-bee/pkg/logging"
+	"github.com/yanhuangpai/ifi-bee/pkg/node"
 )
 
 func (c *command) initInitCmd() (err error) {

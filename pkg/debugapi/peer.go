@@ -8,11 +8,11 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/ethersphere/bee/pkg/jsonhttp"
-	"github.com/ethersphere/bee/pkg/p2p"
-	"github.com/ethersphere/bee/pkg/swarm"
 	"github.com/gorilla/mux"
 	"github.com/multiformats/go-multiaddr"
+	"github.com/yanhuangpai/ifi-bee/pkg/jsonhttp"
+	"github.com/yanhuangpai/ifi-bee/pkg/p2p"
+	"github.com/yanhuangpai/ifi-bee/pkg/swarm"
 )
 
 type peerConnectResponse struct {

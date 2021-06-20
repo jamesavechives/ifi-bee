@@ -10,11 +10,11 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/ethersphere/bee/pkg/cac"
-	"github.com/ethersphere/bee/pkg/jsonhttp"
-	"github.com/ethersphere/bee/pkg/soc"
-	"github.com/ethersphere/bee/pkg/swarm"
 	"github.com/gorilla/mux"
+	"github.com/yanhuangpai/ifi-bee/pkg/cac"
+	"github.com/yanhuangpai/ifi-bee/pkg/jsonhttp"
+	"github.com/yanhuangpai/ifi-bee/pkg/soc"
+	"github.com/yanhuangpai/ifi-bee/pkg/swarm"
 )
 
 var errBadRequestParams = errors.New("owner, id or span is not well formed")

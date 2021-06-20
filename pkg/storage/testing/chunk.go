@@ -20,8 +20,8 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/ethersphere/bee/pkg/cac"
-	"github.com/ethersphere/bee/pkg/swarm"
+	"github.com/yanhuangpai/ifi-bee/pkg/cac"
+	"github.com/yanhuangpai/ifi-bee/pkg/swarm"
 )
 
 // fixtreuChunks are pregenerated content-addressed chunks necessary for explicit

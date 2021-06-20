@@ -10,7 +10,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethersphere/bee/pkg/settlement/swap/chequebook"
+	"github.com/yanhuangpai/ifi-bee/pkg/settlement/swap/chequebook"
 )
 
 type simpleSwapBindingMock struct {

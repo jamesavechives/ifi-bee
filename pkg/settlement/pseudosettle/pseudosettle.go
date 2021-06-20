@@ -12,13 +12,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ethersphere/bee/pkg/logging"
-	"github.com/ethersphere/bee/pkg/p2p"
-	"github.com/ethersphere/bee/pkg/p2p/protobuf"
-	"github.com/ethersphere/bee/pkg/settlement"
-	pb "github.com/ethersphere/bee/pkg/settlement/pseudosettle/pb"
-	"github.com/ethersphere/bee/pkg/storage"
-	"github.com/ethersphere/bee/pkg/swarm"
+	"github.com/yanhuangpai/ifi-bee/pkg/logging"
+	"github.com/yanhuangpai/ifi-bee/pkg/p2p"
+	"github.com/yanhuangpai/ifi-bee/pkg/p2p/protobuf"
+	"github.com/yanhuangpai/ifi-bee/pkg/settlement"
+	pb "github.com/yanhuangpai/ifi-bee/pkg/settlement/pseudosettle/pb"
+	"github.com/yanhuangpai/ifi-bee/pkg/storage"
+	"github.com/yanhuangpai/ifi-bee/pkg/swarm"
 )
 
 const (

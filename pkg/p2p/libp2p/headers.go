@@ -9,9 +9,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ethersphere/bee/pkg/p2p"
-	"github.com/ethersphere/bee/pkg/p2p/libp2p/internal/headers/pb"
-	"github.com/ethersphere/bee/pkg/p2p/protobuf"
+	"github.com/yanhuangpai/ifi-bee/pkg/p2p"
+	"github.com/yanhuangpai/ifi-bee/pkg/p2p/libp2p/internal/headers/pb"
+	"github.com/yanhuangpai/ifi-bee/pkg/p2p/protobuf"
 )
 
 var sendHeadersTimeout = 10 * time.Second

@@ -15,12 +15,12 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethersphere/bee/pkg/crypto"
-	signermock "github.com/ethersphere/bee/pkg/crypto/mock"
-	"github.com/ethersphere/bee/pkg/logging"
-	"github.com/ethersphere/bee/pkg/settlement/swap/transaction"
-	"github.com/ethersphere/bee/pkg/settlement/swap/transaction/backendmock"
-	storemock "github.com/ethersphere/bee/pkg/statestore/mock"
+	"github.com/yanhuangpai/ifi-bee/pkg/crypto"
+	signermock "github.com/yanhuangpai/ifi-bee/pkg/crypto/mock"
+	"github.com/yanhuangpai/ifi-bee/pkg/logging"
+	"github.com/yanhuangpai/ifi-bee/pkg/settlement/swap/transaction"
+	"github.com/yanhuangpai/ifi-bee/pkg/settlement/swap/transaction/backendmock"
+	storemock "github.com/yanhuangpai/ifi-bee/pkg/statestore/mock"
 )
 
 func nonceKey(sender common.Address) string {

@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/ethersphere/bee"
-	"github.com/ethersphere/bee/cmd/bee/cmd"
+	"github.com/yanhuangpai/ifi-bee/cmd/bee/cmd"
 )
 
 func TestVersionCmd(t *testing.T) {

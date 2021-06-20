@@ -18,14 +18,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethersphere/bee/pkg/collection/entry"
-	"github.com/ethersphere/bee/pkg/file/loadsave"
-	"github.com/ethersphere/bee/pkg/file/pipeline/builder"
-	"github.com/ethersphere/bee/pkg/manifest"
-	"github.com/ethersphere/bee/pkg/storage"
-	"github.com/ethersphere/bee/pkg/storage/mock"
-	"github.com/ethersphere/bee/pkg/swarm"
-	"github.com/ethersphere/bee/pkg/traversal"
+	"github.com/yanhuangpai/ifi-bee/pkg/collection/entry"
+	"github.com/yanhuangpai/ifi-bee/pkg/file/loadsave"
+	"github.com/yanhuangpai/ifi-bee/pkg/file/pipeline/builder"
+	"github.com/yanhuangpai/ifi-bee/pkg/manifest"
+	"github.com/yanhuangpai/ifi-bee/pkg/storage"
+	"github.com/yanhuangpai/ifi-bee/pkg/storage/mock"
+	"github.com/yanhuangpai/ifi-bee/pkg/swarm"
+	"github.com/yanhuangpai/ifi-bee/pkg/traversal"
 )
 
 var (

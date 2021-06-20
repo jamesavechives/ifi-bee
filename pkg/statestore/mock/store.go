@@ -11,7 +11,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/ethersphere/bee/pkg/storage"
+	"github.com/yanhuangpai/ifi-bee/pkg/storage"
 )
 
 var _ storage.StateStorer = (*store)(nil)

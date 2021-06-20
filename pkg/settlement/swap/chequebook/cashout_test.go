@@ -11,13 +11,13 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethersphere/bee/pkg/settlement/swap/chequebook"
-	chequestoremock "github.com/ethersphere/bee/pkg/settlement/swap/chequestore/mock"
-	"github.com/ethersphere/bee/pkg/settlement/swap/transaction"
-	"github.com/ethersphere/bee/pkg/settlement/swap/transaction/backendmock"
-	transactionmock "github.com/ethersphere/bee/pkg/settlement/swap/transaction/mock"
-	storemock "github.com/ethersphere/bee/pkg/statestore/mock"
 	"github.com/ethersphere/sw3-bindings/v3/simpleswapfactory"
+	"github.com/yanhuangpai/ifi-bee/pkg/settlement/swap/chequebook"
+	chequestoremock "github.com/yanhuangpai/ifi-bee/pkg/settlement/swap/chequestore/mock"
+	"github.com/yanhuangpai/ifi-bee/pkg/settlement/swap/transaction"
+	"github.com/yanhuangpai/ifi-bee/pkg/settlement/swap/transaction/backendmock"
+	transactionmock "github.com/yanhuangpai/ifi-bee/pkg/settlement/swap/transaction/mock"
+	storemock "github.com/yanhuangpai/ifi-bee/pkg/statestore/mock"
 )
 
 var (

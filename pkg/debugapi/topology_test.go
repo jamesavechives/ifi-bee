@@ -10,9 +10,9 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/ethersphere/bee/pkg/jsonhttp"
-	"github.com/ethersphere/bee/pkg/jsonhttp/jsonhttptest"
-	topmock "github.com/ethersphere/bee/pkg/topology/mock"
+	"github.com/yanhuangpai/ifi-bee/pkg/jsonhttp"
+	"github.com/yanhuangpai/ifi-bee/pkg/jsonhttp/jsonhttptest"
+	topmock "github.com/yanhuangpai/ifi-bee/pkg/topology/mock"
 )
 
 type topologyResponse struct {

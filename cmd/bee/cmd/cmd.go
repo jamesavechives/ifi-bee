@@ -11,9 +11,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/ethersphere/bee/pkg/swarm"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/yanhuangpai/ifi-bee/pkg/swarm"
 )
 
 const (

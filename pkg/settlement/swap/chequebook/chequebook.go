@@ -14,10 +14,10 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethersphere/bee/pkg/settlement/swap/erc20"
-	"github.com/ethersphere/bee/pkg/settlement/swap/transaction"
-	"github.com/ethersphere/bee/pkg/storage"
 	"github.com/ethersphere/sw3-bindings/v3/simpleswapfactory"
+	"github.com/yanhuangpai/ifi-bee/pkg/settlement/swap/erc20"
+	"github.com/yanhuangpai/ifi-bee/pkg/settlement/swap/transaction"
+	"github.com/yanhuangpai/ifi-bee/pkg/storage"
 )
 
 // SendChequeFunc is a function to send cheques.

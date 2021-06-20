@@ -9,8 +9,8 @@ import (
 	"testing"
 
 	"github.com/ethersphere/bee"
-	"github.com/ethersphere/bee/pkg/debugapi"
-	"github.com/ethersphere/bee/pkg/jsonhttp/jsonhttptest"
+	"github.com/yanhuangpai/ifi-bee/pkg/debugapi"
+	"github.com/yanhuangpai/ifi-bee/pkg/jsonhttp/jsonhttptest"
 )
 
 func TestHealth(t *testing.T) {

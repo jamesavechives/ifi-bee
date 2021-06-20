@@ -7,8 +7,8 @@ package entry_test
 import (
 	"testing"
 
-	"github.com/ethersphere/bee/pkg/collection/entry"
-	"github.com/ethersphere/bee/pkg/swarm/test"
+	"github.com/yanhuangpai/ifi-bee/pkg/collection/entry"
+	"github.com/yanhuangpai/ifi-bee/pkg/swarm/test"
 )
 
 // TestEntrySerialize verifies integrity of serialization.

@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethersphere/bee/pkg/storage"
+	"github.com/yanhuangpai/ifi-bee/pkg/storage"
 )
 
 // TestModeGetRequest validates ModeGetRequest index values on the provided DB.

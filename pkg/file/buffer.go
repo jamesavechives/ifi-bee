@@ -7,7 +7,7 @@ package file
 import (
 	"io"
 
-	"github.com/ethersphere/bee/pkg/swarm"
+	"github.com/yanhuangpai/ifi-bee/pkg/swarm"
 )
 
 const (

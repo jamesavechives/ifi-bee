@@ -15,13 +15,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ethersphere/bee/pkg/addressbook"
-	"github.com/ethersphere/bee/pkg/bzz"
-	"github.com/ethersphere/bee/pkg/hive/pb"
-	"github.com/ethersphere/bee/pkg/logging"
-	"github.com/ethersphere/bee/pkg/p2p"
-	"github.com/ethersphere/bee/pkg/p2p/protobuf"
-	"github.com/ethersphere/bee/pkg/swarm"
+	"github.com/yanhuangpai/ifi-bee/pkg/addressbook"
+	"github.com/yanhuangpai/ifi-bee/pkg/bzz"
+	"github.com/yanhuangpai/ifi-bee/pkg/hive/pb"
+	"github.com/yanhuangpai/ifi-bee/pkg/logging"
+	"github.com/yanhuangpai/ifi-bee/pkg/p2p"
+	"github.com/yanhuangpai/ifi-bee/pkg/p2p/protobuf"
+	"github.com/yanhuangpai/ifi-bee/pkg/swarm"
 )
 
 const (

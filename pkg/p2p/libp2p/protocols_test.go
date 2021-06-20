@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethersphere/bee/pkg/p2p"
 	"github.com/multiformats/go-multistream"
+	"github.com/yanhuangpai/ifi-bee/pkg/p2p"
 )
 
 func TestNewStream(t *testing.T) {

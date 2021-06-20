@@ -15,8 +15,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ethersphere/bee/pkg/crypto"
-	"github.com/ethersphere/bee/pkg/swarm"
+	"github.com/yanhuangpai/ifi-bee/pkg/crypto"
+	"github.com/yanhuangpai/ifi-bee/pkg/swarm"
 
 	ma "github.com/multiformats/go-multiaddr"
 )

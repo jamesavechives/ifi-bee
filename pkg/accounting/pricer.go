@@ -5,7 +5,7 @@
 package accounting
 
 import (
-	"github.com/ethersphere/bee/pkg/swarm"
+	"github.com/yanhuangpai/ifi-bee/pkg/swarm"
 )
 
 // Pricer returns pricing information for chunk hashes.

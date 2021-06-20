@@ -6,7 +6,7 @@
 package collection
 
 import (
-	"github.com/ethersphere/bee/pkg/swarm"
+	"github.com/yanhuangpai/ifi-bee/pkg/swarm"
 )
 
 // Collection provides a specific ordering of a collection of binary data vectors

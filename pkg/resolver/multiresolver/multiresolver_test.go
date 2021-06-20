@@ -11,11 +11,11 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/ethersphere/bee/pkg/logging"
-	"github.com/ethersphere/bee/pkg/resolver"
-	"github.com/ethersphere/bee/pkg/resolver/mock"
-	"github.com/ethersphere/bee/pkg/resolver/multiresolver"
-	"github.com/ethersphere/bee/pkg/swarm"
+	"github.com/yanhuangpai/ifi-bee/pkg/logging"
+	"github.com/yanhuangpai/ifi-bee/pkg/resolver"
+	"github.com/yanhuangpai/ifi-bee/pkg/resolver/mock"
+	"github.com/yanhuangpai/ifi-bee/pkg/resolver/multiresolver"
+	"github.com/yanhuangpai/ifi-bee/pkg/swarm"
 )
 
 type Address = swarm.Address

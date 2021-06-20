@@ -16,9 +16,9 @@ import (
 	"io"
 	"sync"
 
-	"github.com/ethersphere/bee/pkg/logging"
-	"github.com/ethersphere/bee/pkg/pushsync"
-	"github.com/ethersphere/bee/pkg/swarm"
+	"github.com/yanhuangpai/ifi-bee/pkg/logging"
+	"github.com/yanhuangpai/ifi-bee/pkg/pushsync"
+	"github.com/yanhuangpai/ifi-bee/pkg/swarm"
 )
 
 var (

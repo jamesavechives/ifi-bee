@@ -1,0 +1,44 @@
+module github.com/yanhuangpai/ifi-bee
+
+go 1.15
+
+require (
+	github.com/btcsuite/btcd v0.22.0-beta
+	github.com/coreos/go-semver v0.3.0
+	github.com/ethereum/go-ethereum v1.10.4
+	github.com/ethersphere/bee v0.6.2
+	github.com/ethersphere/bmt v0.1.4
+	github.com/ethersphere/langos v1.0.0
+	github.com/ethersphere/manifest v0.3.6
+	github.com/ethersphere/sw3-bindings/v3 v3.0.3
+	github.com/gogo/protobuf v1.3.2
+	github.com/gorilla/handlers v1.5.1
+	github.com/gorilla/mux v1.8.0
+	github.com/gorilla/websocket v1.4.2
+	github.com/kardianos/service v1.2.0
+	github.com/libp2p/go-libp2p v0.14.2
+	github.com/libp2p/go-libp2p-autonat v0.4.2
+	github.com/libp2p/go-libp2p-core v0.8.5
+	github.com/libp2p/go-libp2p-peerstore v0.2.7
+	github.com/libp2p/go-libp2p-quic-transport v0.11.1
+	github.com/libp2p/go-libp2p-transport-upgrader v0.4.2
+	github.com/libp2p/go-tcp-transport v0.2.2
+	github.com/libp2p/go-ws-transport v0.4.0
+	github.com/multiformats/go-multiaddr v0.3.2
+	github.com/multiformats/go-multiaddr-dns v0.3.1
+	github.com/multiformats/go-multistream v0.2.2
+	github.com/opentracing/opentracing-go v1.2.0
+	github.com/prometheus/client_golang v1.11.0
+	github.com/sirupsen/logrus v1.8.1
+	github.com/spf13/cobra v1.1.3
+	github.com/spf13/viper v1.8.0
+	github.com/syndtr/goleveldb v1.0.1-0.20210305035536-64b5b1c73954
+	github.com/uber/jaeger-client-go v2.29.1+incompatible
+	github.com/wealdtech/go-ens/v3 v3.4.6
+	golang.org/x/crypto v0.0.0-20210616213533-5ff15b29337e
+	golang.org/x/net v0.0.0-20210614182718-04defd469f4e
+	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
+	golang.org/x/term v0.0.0-20210615171337-6886f2dfbf5b
+	gopkg.in/yaml.v2 v2.4.0
+	resenje.org/web v0.5.1
+)

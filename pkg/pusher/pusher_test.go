@@ -12,17 +12,17 @@ import (
 	"testing"
 	"time"
 
-	statestore "github.com/ethersphere/bee/pkg/statestore/mock"
+	statestore "github.com/yanhuangpai/ifi-bee/pkg/statestore/mock"
 
-	"github.com/ethersphere/bee/pkg/localstore"
-	"github.com/ethersphere/bee/pkg/logging"
-	"github.com/ethersphere/bee/pkg/pusher"
-	"github.com/ethersphere/bee/pkg/pushsync"
-	pushsyncmock "github.com/ethersphere/bee/pkg/pushsync/mock"
-	"github.com/ethersphere/bee/pkg/storage"
-	"github.com/ethersphere/bee/pkg/swarm"
-	"github.com/ethersphere/bee/pkg/tags"
-	"github.com/ethersphere/bee/pkg/topology/mock"
+	"github.com/yanhuangpai/ifi-bee/pkg/localstore"
+	"github.com/yanhuangpai/ifi-bee/pkg/logging"
+	"github.com/yanhuangpai/ifi-bee/pkg/pusher"
+	"github.com/yanhuangpai/ifi-bee/pkg/pushsync"
+	pushsyncmock "github.com/yanhuangpai/ifi-bee/pkg/pushsync/mock"
+	"github.com/yanhuangpai/ifi-bee/pkg/storage"
+	"github.com/yanhuangpai/ifi-bee/pkg/swarm"
+	"github.com/yanhuangpai/ifi-bee/pkg/tags"
+	"github.com/yanhuangpai/ifi-bee/pkg/topology/mock"
 )
 
 // no of times to retry to see if we have received response from pushsync

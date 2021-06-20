@@ -9,7 +9,7 @@ import (
 	"encoding/hex"
 	"testing"
 
-	"github.com/ethersphere/bee/pkg/crypto"
+	"github.com/yanhuangpai/ifi-bee/pkg/crypto"
 )
 
 func TestGenerateSecp256k1Key(t *testing.T) {

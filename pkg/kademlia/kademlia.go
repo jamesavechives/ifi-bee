@@ -14,14 +14,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethersphere/bee/pkg/addressbook"
-	"github.com/ethersphere/bee/pkg/discovery"
-	"github.com/ethersphere/bee/pkg/kademlia/pslice"
-	"github.com/ethersphere/bee/pkg/logging"
-	"github.com/ethersphere/bee/pkg/p2p"
-	"github.com/ethersphere/bee/pkg/swarm"
-	"github.com/ethersphere/bee/pkg/topology"
 	ma "github.com/multiformats/go-multiaddr"
+	"github.com/yanhuangpai/ifi-bee/pkg/addressbook"
+	"github.com/yanhuangpai/ifi-bee/pkg/discovery"
+	"github.com/yanhuangpai/ifi-bee/pkg/kademlia/pslice"
+	"github.com/yanhuangpai/ifi-bee/pkg/logging"
+	"github.com/yanhuangpai/ifi-bee/pkg/p2p"
+	"github.com/yanhuangpai/ifi-bee/pkg/swarm"
+	"github.com/yanhuangpai/ifi-bee/pkg/topology"
 )
 
 const (

@@ -11,9 +11,9 @@ import (
 	"io"
 	"time"
 
-	"github.com/ethersphere/bee/pkg/bzz"
-	"github.com/ethersphere/bee/pkg/swarm"
 	ma "github.com/multiformats/go-multiaddr"
+	"github.com/yanhuangpai/ifi-bee/pkg/bzz"
+	"github.com/yanhuangpai/ifi-bee/pkg/swarm"
 )
 
 // Service provides methods to handle p2p Peers and Protocols.

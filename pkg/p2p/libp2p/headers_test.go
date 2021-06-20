@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethersphere/bee/pkg/p2p"
+	"github.com/yanhuangpai/ifi-bee/pkg/p2p"
 )
 
 func TestHeaders(t *testing.T) {

@@ -21,9 +21,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethersphere/bee/pkg/flipflop"
-	"github.com/ethersphere/bee/pkg/shed"
-	"github.com/ethersphere/bee/pkg/swarm"
+	"github.com/yanhuangpai/ifi-bee/pkg/flipflop"
+	"github.com/yanhuangpai/ifi-bee/pkg/shed"
+	"github.com/yanhuangpai/ifi-bee/pkg/swarm"
 )
 
 // SubscribePush returns a channel that provides storage chunks with ordering from push syncing index.

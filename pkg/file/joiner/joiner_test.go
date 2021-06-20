@@ -16,14 +16,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethersphere/bee/pkg/encryption/store"
-	"github.com/ethersphere/bee/pkg/file/joiner"
-	"github.com/ethersphere/bee/pkg/file/pipeline/builder"
-	"github.com/ethersphere/bee/pkg/file/splitter"
-	filetest "github.com/ethersphere/bee/pkg/file/testing"
-	"github.com/ethersphere/bee/pkg/storage"
-	"github.com/ethersphere/bee/pkg/storage/mock"
-	"github.com/ethersphere/bee/pkg/swarm"
+	"github.com/yanhuangpai/ifi-bee/pkg/encryption/store"
+	"github.com/yanhuangpai/ifi-bee/pkg/file/joiner"
+	"github.com/yanhuangpai/ifi-bee/pkg/file/pipeline/builder"
+	"github.com/yanhuangpai/ifi-bee/pkg/file/splitter"
+	filetest "github.com/yanhuangpai/ifi-bee/pkg/file/testing"
+	"github.com/yanhuangpai/ifi-bee/pkg/storage"
+	"github.com/yanhuangpai/ifi-bee/pkg/storage/mock"
+	"github.com/yanhuangpai/ifi-bee/pkg/swarm"
 	"gitlab.com/nolash/go-mockbytes"
 )
 

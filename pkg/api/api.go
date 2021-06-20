@@ -19,17 +19,17 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/ethersphere/bee/pkg/feeds"
-	"github.com/ethersphere/bee/pkg/file/pipeline/builder"
-	"github.com/ethersphere/bee/pkg/logging"
-	m "github.com/ethersphere/bee/pkg/metrics"
-	"github.com/ethersphere/bee/pkg/pss"
-	"github.com/ethersphere/bee/pkg/resolver"
-	"github.com/ethersphere/bee/pkg/storage"
-	"github.com/ethersphere/bee/pkg/swarm"
-	"github.com/ethersphere/bee/pkg/tags"
-	"github.com/ethersphere/bee/pkg/tracing"
-	"github.com/ethersphere/bee/pkg/traversal"
+	"github.com/yanhuangpai/ifi-bee/pkg/feeds"
+	"github.com/yanhuangpai/ifi-bee/pkg/file/pipeline/builder"
+	"github.com/yanhuangpai/ifi-bee/pkg/logging"
+	m "github.com/yanhuangpai/ifi-bee/pkg/metrics"
+	"github.com/yanhuangpai/ifi-bee/pkg/pss"
+	"github.com/yanhuangpai/ifi-bee/pkg/resolver"
+	"github.com/yanhuangpai/ifi-bee/pkg/storage"
+	"github.com/yanhuangpai/ifi-bee/pkg/swarm"
+	"github.com/yanhuangpai/ifi-bee/pkg/tags"
+	"github.com/yanhuangpai/ifi-bee/pkg/tracing"
+	"github.com/yanhuangpai/ifi-bee/pkg/traversal"
 )
 
 const (

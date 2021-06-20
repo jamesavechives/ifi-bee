@@ -25,11 +25,11 @@ import (
 	"log"
 	"time"
 
-	"github.com/ethersphere/bee/pkg/shed"
-	"github.com/ethersphere/bee/pkg/storage"
-	"github.com/ethersphere/bee/pkg/storage/testing"
-	"github.com/ethersphere/bee/pkg/swarm"
 	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/yanhuangpai/ifi-bee/pkg/shed"
+	"github.com/yanhuangpai/ifi-bee/pkg/storage"
+	"github.com/yanhuangpai/ifi-bee/pkg/storage/testing"
+	"github.com/yanhuangpai/ifi-bee/pkg/swarm"
 )
 
 // Store holds fields and indexes (including their encoding functions)

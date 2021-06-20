@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"time"
 
-	m "github.com/ethersphere/bee/pkg/metrics"
 	"github.com/prometheus/client_golang/prometheus"
+	m "github.com/yanhuangpai/ifi-bee/pkg/metrics"
 )
 
 type metrics struct {
